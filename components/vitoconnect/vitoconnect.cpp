@@ -64,7 +64,7 @@ void VitoConnect::loop() {
 }
 
 void VitoConnect::update() {
-  ESP_LOGD(TAG, "Schedule sensor update");
+  ESP_LOGD(TAG, "Schedule sensor update (Every %d ms)", this->get_update_interval());
   last_update_start = millis();
   
   uint32_t avg_read_time = getAverageReadTime();

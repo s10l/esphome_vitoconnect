@@ -42,7 +42,7 @@ namespace vitoconnect {
 class VitoConnect : public uart::UARTDevice, public PollingComponent {
   public:
 
-    VitoConnect() : PollingComponent() {}
+    VitoConnect() : PollingComponent(0) {}
     
     void setup() override;
     void loop() override;
