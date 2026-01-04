@@ -42,7 +42,7 @@ namespace vitoconnect {
 class VitoConnect : public uart::UARTDevice, public PollingComponent {
   public:
 
-    VitoConnect() : PollingComponent(0) {}
+    VitoConnect() : PollingComponent() {}
     
     void setup() override;
     void loop() override;
@@ -50,8 +50,6 @@ class VitoConnect : public uart::UARTDevice, public PollingComponent {
 
     void set_protocol(std::string protocol) { this->protocol = protocol; }
     void register_datapoint(Datapoint *datapoint);
-    
-    void set_update_interval(uint32_t update_interval_ms) { this->update_interval_ms = update_interval_ms; }
 
     void onData(std::function<void(const uint8_t* data, uint8_t length, Datapoint* dp)> callback);
     void onError(std::function<void(uint8_t, Datapoint*)> callback);
@@ -77,7 +75,6 @@ class VitoConnect : public uart::UARTDevice, public PollingComponent {
     Optolink* _optolink;
     std::vector<Datapoint*> _datapoints;
     std::string protocol;
-    uint32_t update_interval_ms = 60000;
     
     // Timing tracking
     uint32_t last_update_start = 0;

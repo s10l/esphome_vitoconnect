@@ -76,7 +76,7 @@ void VitoConnect::update() {
   uint32_t queued_count = 0;
   
   for (Datapoint* dp : sorted_datapoints) {
-    uint32_t time_remaining = update_interval_ms - estimated_time;
+    uint32_t time_remaining = this->get_update_interval() - estimated_time;
     
     if (shouldQueueDatapoint(dp, time_remaining, avg_read_time)) {
       if (queueDatapointRead(dp)) {
