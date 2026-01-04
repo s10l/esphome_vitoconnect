@@ -64,20 +64,89 @@ void VitoConnect::loop() {
 }
 
 void VitoConnect::update() {
-  // This will be called every "update_interval" milliseconds.
   ESP_LOGD(TAG, "Schedule sensor update");
+  last_update_start = millis();
   
-  for (Datapoint* dp : this->_datapoints) {
-      CbArg* arg = new CbArg(this, dp);   
-      if (_optolink->read(dp->getAddress(), dp->getLength(), reinterpret_cast<void*>(arg))) {
-      } else {
-          delete arg;
+  uint32_t avg_read_time = getAverageReadTime();
+  ESP_LOGD(TAG, "Average read time: %d ms, Total reads: %d", avg_read_time, total_reads);
+  
+  std::vector<Datapoint*> sorted_datapoints = getSortedDatapointsByPriority();
+  
+  uint32_t estimated_time = 0;
+  uint32_t queued_count = 0;
+  
+  for (Datapoint* dp : sorted_datapoints) {
+    uint32_t time_remaining = update_interval_ms - estimated_time;
+    
+    if (shouldQueueDatapoint(dp, time_remaining, avg_read_time)) {
+      if (queueDatapointRead(dp)) {
+        estimated_time += avg_read_time;
+        queued_count++;
       }
+    } else {
+      ESP_LOGD(TAG, "Skipping datapoint 0x%04X (priority %d) - insufficient time", 
+               dp->getAddress(), dp->getPriority());
+    }
   }
+  
+  ESP_LOGD(TAG, "Queued %d datapoints (estimated time: %d ms)", queued_count, estimated_time);
+}
+
+uint32_t VitoConnect::getAverageReadTime() {
+  if (total_reads > 0) {
+    return total_read_time / total_reads;
+  }
+  return 500;  // Default estimate: 500ms per read
+}
+
+std::vector<Datapoint*> VitoConnect::getSortedDatapointsByPriority() {
+  std::vector<Datapoint*> sorted = this->_datapoints;
+  // Sort by priority: low priority first (higher number = lower priority)
+  std::sort(sorted.begin(), sorted.end(), 
+    [](Datapoint* a, Datapoint* b) {
+      return a->getPriority() > b->getPriority();
+    });
+  return sorted;
+}
+
+bool VitoConnect::shouldQueueDatapoint(Datapoint* dp, uint32_t time_remaining, uint32_t avg_read_time) {
+  // Always queue high priority datapoints (priority 1)
+  if (dp->getPriority() == 1) {
+    return true;
+  }
+  
+  // For medium/low priority, check if we have enough time
+  // Reserve at least 2x avg_read_time as safety margin
+  return time_remaining >= avg_read_time * 2;
+}
+
+bool VitoConnect::queueDatapointRead(Datapoint* dp) {
+  CbArg* arg = new CbArg(this, dp);
+  single_read_start = millis();
+  
+  if (_optolink->read(dp->getAddress(), dp->getLength(), reinterpret_cast<void*>(arg))) {
+    return true;
+  }
+  
+  delete arg;
+  return false;
 }
 
 void VitoConnect::_onData(uint8_t* data, uint8_t len, void* arg) {
   CbArg* cbArg = reinterpret_cast<CbArg*>(arg);
+  
+  // Track timing for this read
+  if (cbArg->v->single_read_start > 0) {
+    uint32_t read_duration = millis() - cbArg->v->single_read_start;
+    cbArg->v->total_read_time += read_duration;
+    cbArg->v->total_reads++;
+    cbArg->v->single_read_start = 0;
+    
+    ESP_LOGV(TAG, "Read completed in %d ms (avg: %d ms)", 
+             read_duration, 
+             cbArg->v->total_reads > 0 ? cbArg->v->total_read_time / cbArg->v->total_reads : 0);
+  }
+  
   cbArg->dp->decode(data, len, cbArg->dp);
   delete cbArg;
 }

@@ -44,6 +44,9 @@ class Datapoint {
   
   void setLength(uint8_t length) {  this->_length = length; };
   uint8_t getLength() { return this->_length; };
+  
+  void setPriority(uint8_t priority) {  this->_priority = priority; };
+  uint8_t getPriority() { return this->_priority; };
 
   static void onData(std::function<void(uint8_t[], uint8_t, Datapoint* dp)> callback);
   void onError(uint8_t, Datapoint* dp);
@@ -54,6 +57,7 @@ class Datapoint {
  protected:
   uint16_t _address;
   uint8_t _length;
+  uint8_t _priority = 2;  // Default priority: 1=high, 2=medium, 3=low
   static std::function<void(uint8_t[], uint8_t, Datapoint* dp)> _stdOnData;
 };
 

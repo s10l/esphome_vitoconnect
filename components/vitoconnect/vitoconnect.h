@@ -23,6 +23,7 @@
 #include "esphome/components/uart/uart.h"
 #include "esphome/components/uart/uart_component.h"
 #include "esphome/components/sensor/sensor.h"
+#include <algorithm>
 // #include "vitoconnect_DP.h"
 #include "vitoconnect_optolink.h"
 #include "vitoconnect_optolinkP300.h"
@@ -49,6 +50,8 @@ class VitoConnect : public uart::UARTDevice, public PollingComponent {
 
     void set_protocol(std::string protocol) { this->protocol = protocol; }
     void register_datapoint(Datapoint *datapoint);
+    
+    void set_update_interval(uint32_t update_interval_ms) { this->update_interval_ms = update_interval_ms; }
 
     void onData(std::function<void(const uint8_t* data, uint8_t length, Datapoint* dp)> callback);
     void onError(std::function<void(uint8_t, Datapoint*)> callback);
@@ -74,6 +77,15 @@ class VitoConnect : public uart::UARTDevice, public PollingComponent {
     Optolink* _optolink;
     std::vector<Datapoint*> _datapoints;
     std::string protocol;
+    uint32_t update_interval_ms = 60000;
+    
+    // Timing tracking
+    uint32_t last_update_start = 0;
+    uint32_t last_update_duration = 0;
+    uint32_t total_reads = 0;
+    uint32_t total_read_time = 0;
+    uint32_t single_read_start = 0;
+    
     struct CbArg {
       CbArg(VitoConnect* vw, Datapoint* d) :
         v(vw),
@@ -85,6 +97,12 @@ class VitoConnect : public uart::UARTDevice, public PollingComponent {
     static void _onError(uint8_t error, void* arg);
 
     std::function<void(uint8_t, Datapoint*)> _onErrorCb;
+    
+    // Helper methods for update cycle
+    uint32_t getAverageReadTime();
+    std::vector<Datapoint*> getSortedDatapointsByPriority();
+    bool shouldQueueDatapoint(Datapoint* dp, uint32_t time_remaining, uint32_t avg_read_time);
+    bool queueDatapointRead(Datapoint* dp);
 };
 
 }  // namespace vitoconnect
