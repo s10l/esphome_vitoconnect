@@ -3,12 +3,10 @@ import esphome.config_validation as cv
 from esphome.components import sensor
 from esphome.const import CONF_ADDRESS, CONF_LENGTH
 
-from .. import CONF_VITOCONNECT_ID, VitoConnect, vitoconnect_ns
+from .. import CONF_VITOCONNECT_ID, CONF_PRIORITY, VitoConnect, vitoconnect_ns
 
 DEPENDENCIES = ["vitoconnect"]
 OPTOLINKSensor = vitoconnect_ns.class_("OPTOLINKSensor", sensor.Sensor)
-
-CONF_PRIORITY = "priority"
 
 CONFIG_SCHEMA = sensor.sensor_schema(OPTOLINKSensor).extend(
     {

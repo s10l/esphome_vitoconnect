@@ -3,21 +3,19 @@ import esphome.config_validation as cv
 from esphome.components import binary_sensor
 from esphome.const import CONF_ADDRESS
 
-from .. import CONF_VITOCONNECT_ID, VitoConnect, vitoconnect_ns
+from .. import CONF_VITOCONNECT_ID, CONF_PRIORITY, VitoConnect, vitoconnect_ns
 
 DEPENDENCIES = ["vitoconnect"]
 OPTOLINKBinarySensor = vitoconnect_ns.class_(
     "OPTOLINKBinarySensor", binary_sensor.BinarySensor
 )
 
-CONF_PRIORITY = "priority"
-
 CONFIG_SCHEMA = binary_sensor.binary_sensor_schema(OPTOLINKBinarySensor).extend(
     {
         cv.GenerateID(): cv.declare_id(OPTOLINKBinarySensor),
         cv.GenerateID(CONF_VITOCONNECT_ID): cv.use_id(VitoConnect),
         cv.Required(CONF_ADDRESS): cv.uint16_t,
-        cv.Optional(CONF_PRIORITY, default=1): cv.int_range(min=1, max=3),
+        cv.Optional(CONF_PRIORITY, default=2): cv.int_range(min=1, max=3),
     }
 )
 

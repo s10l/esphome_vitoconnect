@@ -42,7 +42,8 @@ uart:
 vitoconnect:
   uart_id: uart_vitoconnect
   protocol: P300                # set protocol to KW or P300
-  update_interval: 30s
+  update_interval: 30s          # default: 60s
+  queue_size: 40                # default: 20
 
 sensor:
   - platform: vitoconnect
