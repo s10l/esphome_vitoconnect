@@ -53,6 +53,7 @@ class VitoConnect : public uart::UARTDevice, public PollingComponent {
 
     void onData(std::function<void(const uint8_t* data, uint8_t length, Datapoint* dp)> callback);
     void onError(std::function<void(uint8_t, Datapoint*)> callback);
+    void onQueueEmpty(std::function<void()> callback);
 
     /**
      * @brief Enqueue a datapoint for writing.
@@ -78,10 +79,8 @@ class VitoConnect : public uart::UARTDevice, public PollingComponent {
     
     // Timing tracking
     uint32_t last_update_start = 0;
-    uint32_t last_update_duration = 0;
     uint32_t total_reads = 0;
     uint32_t total_read_time = 0;
-    uint32_t single_read_start = 0;
     
     struct CbArg {
       CbArg(VitoConnect* vw, Datapoint* d) :
@@ -92,6 +91,7 @@ class VitoConnect : public uart::UARTDevice, public PollingComponent {
     };
     static void _onData(uint8_t* data, uint8_t len, void* arg);
     static void _onError(uint8_t error, void* arg);
+    static void _onQueueEmpty(void* arg);
 
     std::function<void(uint8_t, Datapoint*)> _onErrorCb;
     

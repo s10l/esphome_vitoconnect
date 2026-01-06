@@ -45,6 +45,7 @@ void VitoConnect::setup() {
       // add onData and onError callbacks
       _optolink->onData(&VitoConnect::_onData);
       _optolink->onError(&VitoConnect::_onError);
+      _optolink->onQueueEmpty(&VitoConnect::_onQueueEmpty);
       
       // set initial state
       _optolink->begin();
@@ -65,10 +66,16 @@ void VitoConnect::loop() {
 
 void VitoConnect::update() {
   ESP_LOGD(TAG, "Schedule sensor update (Every %d ms)", this->get_update_interval());
+  if (last_update_start != 0) {
+    ESP_LOGE(TAG, "Previous update cycle not finished yet! Skipping this update.");
+    return;
+  }
   last_update_start = millis();
-  
+  total_reads = 0;
+    
   uint32_t avg_read_time = getAverageReadTime();
-  ESP_LOGD(TAG, "Average read time: %d ms, Total reads: %d", avg_read_time, total_reads);
+  ESP_LOGD(TAG, "Average read time: %d ms, Number of sensors: %d, max. queue size %d, expected read time: %d ms", 
+    avg_read_time, this->_datapoints.size(), VITOWIFI_MAX_QUEUE_LENGTH, avg_read_time * this->_datapoints.size());
   
   std::vector<Datapoint*> sorted_datapoints = getSortedDatapointsByPriority();
   
@@ -95,10 +102,16 @@ void VitoConnect::update() {
 }
 
 uint32_t VitoConnect::getAverageReadTime() {
-  if (total_reads > 0) {
-    return total_read_time / total_reads;
+  if (total_read_time > 0) {
+    return total_read_time / this->_datapoints.size();
   }
-  return 500;  // Default estimate: 500ms per read
+// Calculate read time based on 4800 baud. This is only necessary for the first run.
+// Send: 5 bytes (0x01F7000002) + 2 stop bit = 8 bits per byte * 7 = 56 bits
+// Receive: 2 bytes (0x0000) + 2 stop bit = 8 bits per byte * 2 = 16 bits
+// Total: 56 + 16 = 72 bits / 4800 baud = 15 ms
+// Add protocol overhead (~50ms) for typical Viessmann response time
+// per read (15ms transmission + ~50ms protocol overhead) = ~65ms
+  return 65;
 }
 
 std::vector<Datapoint*> VitoConnect::getSortedDatapointsByPriority() {
@@ -125,7 +138,6 @@ bool VitoConnect::shouldQueueDatapoint(Datapoint* dp, uint32_t time_remaining, u
 
 bool VitoConnect::queueDatapointRead(Datapoint* dp) {
   CbArg* arg = new CbArg(this, dp);
-  single_read_start = millis();
   
   if (_optolink->read(dp->getAddress(), dp->getLength(), reinterpret_cast<void*>(arg))) {
     return true;
@@ -138,17 +150,13 @@ bool VitoConnect::queueDatapointRead(Datapoint* dp) {
 void VitoConnect::_onData(uint8_t* data, uint8_t len, void* arg) {
   CbArg* cbArg = reinterpret_cast<CbArg*>(arg);
   
-  // Track timing for this read
-  if (cbArg->v->single_read_start > 0) {
-    uint32_t read_duration = millis() - cbArg->v->single_read_start;
-    cbArg->v->total_read_time += read_duration;
-    cbArg->v->total_reads++;
-    cbArg->v->single_read_start = 0;
+  cbArg->v->total_reads++;
+  uint32_t total_read_duration = millis() - cbArg->v->last_update_start;
+  uint32_t avg_read_time = total_read_duration / cbArg->v->total_reads;
     
-    ESP_LOGV(TAG, "Read completed in %d ms (avg: %d ms)", 
-             read_duration, 
-             cbArg->v->total_reads > 0 ? cbArg->v->total_read_time / cbArg->v->total_reads : 0);
-  }
+  ESP_LOGV(TAG, "Read completed. Avg read time: %d ms, Total reads: %d, Total duration: %d ms", 
+             avg_read_time, cbArg->v->total_reads, total_read_duration);
+  
   
   cbArg->dp->decode(data, len, cbArg->dp);
   delete cbArg;
@@ -159,6 +167,16 @@ void VitoConnect::_onError(uint8_t error, void* arg) {
   CbArg* cbArg = reinterpret_cast<CbArg*>(arg);
   if (cbArg->v->_onErrorCb) cbArg->v->_onErrorCb(error, cbArg->dp);
   delete cbArg;
+}
+
+void VitoConnect::_onQueueEmpty(void *arg) {
+  ESP_LOGV(TAG, "Optolink queue is empty.");
+  CbArg* cbArg = reinterpret_cast<CbArg*>(arg);
+  if (cbArg->v->last_update_start > 0) {
+    cbArg->v->total_read_time = millis() - cbArg->v->last_update_start;
+    ESP_LOGD(TAG, "Update cycle completed in %d ms, %d datapoints read", cbArg->v->total_read_time, cbArg->v->total_reads);
+    cbArg->v->last_update_start = 0;
+  }
 }
 
 }  // namespace vitoconnect
