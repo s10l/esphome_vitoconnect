@@ -53,6 +53,17 @@ void VitoConnect::setup() {
     } else {
       ESP_LOGW(TAG, "Not able to initialize VitoConnect");
     }
+
+    if (this->_datapoints.size() == 0) {
+      ESP_LOGW(TAG, "No datapoints registered!");
+    } else {
+      ESP_LOGD(TAG, "Registered %d datapoints", this->_datapoints.size());
+    }
+
+    if (this->_datapoints.size() > VITOWIFI_MAX_QUEUE_LENGTH) {
+      ESP_LOGE(TAG, "Number of registered datapoints (%d) exceeds max. queue length (%d). Some datapoints may be skipped during update cycles.", 
+                this->_datapoints.size(), VITOWIFI_MAX_QUEUE_LENGTH);
+    }
 }
 
 void VitoConnect::register_datapoint(Datapoint *datapoint) {
