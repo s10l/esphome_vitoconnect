@@ -82,10 +82,12 @@ void VitoConnect::update() {
       if (queueDatapointRead(dp)) {
         estimated_time += avg_read_time;
         queued_count++;
+        ESP_LOGV(TAG, "Queued datapoint 0x%04X (priority %d), est_time now: %d ms", 
+                 dp->getAddress(), dp->getPriority(), estimated_time);
       }
     } else {
-      ESP_LOGD(TAG, "Skipping datapoint 0x%04X (priority %d) - insufficient time", 
-               dp->getAddress(), dp->getPriority());
+      ESP_LOGD(TAG, "Skipping datapoint 0x%04X (priority %d) - insufficient time (remaining: %d ms, need: %d ms)", 
+               dp->getAddress(), dp->getPriority(), time_remaining, avg_read_time * 2);
     }
   }
   
@@ -101,10 +103,11 @@ uint32_t VitoConnect::getAverageReadTime() {
 
 std::vector<Datapoint*> VitoConnect::getSortedDatapointsByPriority() {
   std::vector<Datapoint*> sorted = this->_datapoints;
-  // Sort by priority: low priority first (higher number = lower priority)
+  // Sort by priority: high priority first (lower number = higher priority)
+  // Priority 1 should be queued first, then 2, then 3
   std::sort(sorted.begin(), sorted.end(), 
     [](Datapoint* a, Datapoint* b) {
-      return a->getPriority() > b->getPriority();
+      return a->getPriority() < b->getPriority();
     });
   return sorted;
 }
