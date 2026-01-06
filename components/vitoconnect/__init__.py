@@ -14,7 +14,7 @@ VitoConnect = vitoconnect_ns.class_("VitoConnect", uart.UARTDevice, cg.PollingCo
 
 CONF_VITOCONNECT_ID = "vitoconnect_id"
 CONF_QUEUE_SIZE = "queue_size"
-CONF_PRIORITY = "priority"
+CONF_CHECK_ONCE = "check_once"
 
 OPTOLINK_PROTOCOL = {
     "P300": "P300",

@@ -147,9 +147,11 @@ class Optolink {
    * @brief Attach a callback to be called when the queue becomes empty.
    * 
    * @param callback Function to be called when the queue becomes empty.
+   * @param arg Argument to pass to the callback. Defaults to nullptr.
    */
-  void onQueueEmpty(OnQueueEmptyCallback callback) {
+  void onQueueEmpty(OnQueueEmptyCallback callback, void* arg = nullptr) {
     _onQueueEmpty = callback;
+    _onQueueEmptyArg = arg;
   }
 
   /**
@@ -206,6 +208,7 @@ class Optolink {
   OnDataArgCallback _onData;
   OnErrorArgCallback _onError;
   OnQueueEmptyCallback _onQueueEmpty;
+  void* _onQueueEmptyArg;
 };
 
 }  // namespace vitoconnect

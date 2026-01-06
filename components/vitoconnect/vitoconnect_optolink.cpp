@@ -69,8 +69,8 @@ void Optolink::_tryOnData(uint8_t* data, uint8_t len) {
   if (_onData) _onData(data, len, arg);
   _queue.pop();
 
-  if ((_queue.size() == 0) && (_onQueueEmpty)) {
-    _onQueueEmpty(arg);
+  if (_queue.size() == 0 && _onQueueEmpty && _onQueueEmptyArg) {
+    _onQueueEmpty(_onQueueEmptyArg);
   }
 }
 

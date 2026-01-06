@@ -47,6 +47,7 @@ class VitoConnect : public uart::UARTDevice, public PollingComponent {
     void setup() override;
     void loop() override;
     void update() override;
+    void dump_config() override;
 
     void set_protocol(std::string protocol) { this->protocol = protocol; }
     void register_datapoint(Datapoint *datapoint);
@@ -75,12 +76,16 @@ class VitoConnect : public uart::UARTDevice, public PollingComponent {
   private:
     Optolink* _optolink;
     std::vector<Datapoint*> _datapoints;
+    std::vector<Datapoint*> _datapointsOnce;
+    std::vector<Datapoint*> _datapointsForUpdate;
     std::string protocol;
     
     // Timing tracking
-    uint32_t last_update_start = 0;
-    uint32_t total_reads = 0;
-    uint32_t total_read_time = 0;
+    uint32_t _last_update_start = 0;
+    uint32_t _total_reads = 0;
+    uint32_t _total_read_time = 0;
+    bool _initial_checks_done = false;
+    bool _initial_check_started = false;
     
     struct CbArg {
       CbArg(VitoConnect* vw, Datapoint* d) :
@@ -97,9 +102,9 @@ class VitoConnect : public uart::UARTDevice, public PollingComponent {
     
     // Helper methods for update cycle
     uint32_t getAverageReadTime();
-    std::vector<Datapoint*> getSortedDatapointsByPriority();
     bool shouldQueueDatapoint(Datapoint* dp, uint32_t time_remaining, uint32_t avg_read_time);
     bool queueDatapointRead(Datapoint* dp);
+    void runInitialChecks();
 };
 
 }  // namespace vitoconnect
