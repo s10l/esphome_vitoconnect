@@ -17,9 +17,9 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#pragma once
+// Modified by Stefan Bickel, 2026-01-08: Updated `CbArg` struct to include an optional pointers for write operation verification.
 
-// #define VITOWIFI_MAX_QUEUE_LENGTH 64
+#pragma once
 
 #include "esphome/core/component.h"
 #include "esphome/components/uart/uart.h"

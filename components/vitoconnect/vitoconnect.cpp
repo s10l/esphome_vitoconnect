@@ -17,6 +17,8 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+// Modified by Stefan Bickel, 2026-01-08: Prioritized writes in update() and added verification read.
+
 #include "vitoconnect.h"
 
 namespace esphome {

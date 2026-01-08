@@ -23,6 +23,8 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
+// Modified by Stefan Bickel, 2026-01-08: Added _last_update member to track external datapoint modification time.
+
 #pragma once
 
 #include <stdint.h>
