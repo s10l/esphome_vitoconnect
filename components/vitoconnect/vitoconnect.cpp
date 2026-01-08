@@ -76,8 +76,8 @@ void VitoConnect::update() {
       foundDirty = true;
       ESP_LOGD(TAG, "Datapoint with address %x was modified and needs to be written.", dp->getAddress());
 
-      uint8_t* data = new uint8_t[dp->getLength()];
-      dp->encode(data, dp->getLength());
+      uint8_t data[dp->getLength()];
+      dp->encode(&data[0], dp->getLength());
 
       // write the modified datapoint
       CbArg* writeCbArg = new CbArg(this, dp, true, dp->getLastUpdate());
@@ -87,9 +87,13 @@ void VitoConnect::update() {
       }
 
       // read the same datapoint to verify the previous write
-      CbArg* readCbArg = new CbArg(this, dp, false, 0, data);
+      uint8_t* readCbData = new uint8_t[dp->getLength()]; // readCbArg has to own this memory
+      memcpy(readCbData, data, dp->getLength());
+
+      CbArg* readCbArg = new CbArg(this, dp, false, 0, readCbData);
       if (!_optolink->read(dp->getAddress(), dp->getLength(), reinterpret_cast<void*>(readCbArg))) {
         delete readCbArg;
+        delete[] readCbData;
         return;
       }
     }
