@@ -2,6 +2,7 @@
 
 #include "esphome/components/switch/switch.h"
 #include "../vitoconnect_datapoint.h"
+#include "esphome/core/hal.h"
 
 namespace esphome {
 namespace vitoconnect {
