@@ -5,6 +5,8 @@ from esphome.const import CONF_ADDRESS
 from .. import vitoconnect_ns, VitoConnect, CONF_VITOCONNECT_ID
 
 DEPENDENCIES = ["vitoconnect"]
+CODEOWNERS = ["@s10l"]
+
 OPTOLINKSwitch = vitoconnect_ns.class_("OPTOLINKSwitch", switch.Switch)
 
 CONFIG_SCHEMA = switch.switch_schema(OPTOLINKSwitch).extend({
