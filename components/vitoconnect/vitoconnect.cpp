@@ -18,6 +18,8 @@
 */
 
 #include "vitoconnect.h"
+#include "vitoconnect_number.h"
+#include "vitoconnect_switch.h"
 
 namespace esphome {
 namespace vitoconnect {
@@ -26,70 +28,115 @@ static const char *TAG = "vitoconnect";
 
 void VitoConnect::setup() {
 
-    this->check_uart_settings(4800, 2, uart::UART_CONFIG_PARITY_EVEN, 8);
+  this->check_uart_settings(4800, 2, uart::UART_CONFIG_PARITY_EVEN, 8);
 
-    ESP_LOGD(TAG, "Starting optolink with protocol: %s", this->protocol.c_str());
-    if (this->protocol.compare("P300") == 0) {
-        _optolink = new OptolinkP300(this);
-    } else if (this->protocol.compare("KW") == 0) {
-        _optolink = new OptolinkKW(this);
-    } else if (this->protocol.compare("GWG") == 0) {
-        _optolink = new OptolinkGWG(this);
-    } else {
-      ESP_LOGW(TAG, "Unknown protocol.");
-    }
+  ESP_LOGD(TAG, "Starting optolink with protocol: %s", this->protocol.c_str());
+  if (this->protocol.compare("P300") == 0) {
+    _optolink = new OptolinkP300(this);
+  } else if (this->protocol.compare("KW") == 0) {
+    _optolink = new OptolinkKW(this);
+  } else if (this->protocol.compare("GWG") == 0) {
+    _optolink = new OptolinkGWG(this);
+  } else {
+    ESP_LOGW(TAG, "Unknown protocol.");
+  }
 
-    // optimize datapoint list
-    _datapoints.shrink_to_fit();
+  // optimize datapoint list
+  _datapoints.shrink_to_fit();
 
-    if (_optolink) {
+  if (_optolink) {
 
-      // add onData and onError callbacks
-      _optolink->onData(&VitoConnect::_onData);
-      _optolink->onError(&VitoConnect::_onError);
-      
-      // set initial state
-      _optolink->begin();
+    // add onData and onError callbacks
+    _optolink->onData(&VitoConnect::_onData);
+    _optolink->onError(&VitoConnect::_onError);
 
-    } else {
-      ESP_LOGW(TAG, "Not able to initialize VitoConnect");
-    }
+    // set initial state
+    _optolink->begin();
+
+  } else {
+    ESP_LOGW(TAG, "Not able to initialize VitoConnect");
+  }
 }
 
 void VitoConnect::register_datapoint(Datapoint *datapoint) {
-    ESP_LOGD(TAG, "Adding datapoint with address %x and length %d", datapoint->getAddress(), datapoint->getLength());
-    this->_datapoints.push_back(datapoint);
+  ESP_LOGD(TAG, "Adding datapoint with address %x and length %d",
+           datapoint->getAddress(), datapoint->getLength());
+  this->_datapoints.push_back(datapoint);
 }
 
-void VitoConnect::loop() {
-    _optolink->loop();
+void VitoConnect::register_switch(VitoSwitch *vitoswitch) {
+  ESP_LOGD(TAG, "Adding switch");
+  this->_switches.push_back(vitoswitch);
 }
+
+void VitoConnect::register_number(VitoNumber *vitonumber) {
+  ESP_LOGD(TAG, "Adding number");
+  this->_numbers.push_back(vitonumber);
+  CallbackDatapoint *dp = new CallbackDatapoint(
+      vitonumber->get_address(), vitonumber->get_length(),
+      [=](const std::vector<uint8_t> &data) { vitonumber->on_update(data); });
+  this->register_datapoint(dp);
+}
+
+void VitoConnect::register_select(VitoSelect *vitoselect) {
+  ESP_LOGD(TAG, "Adding select");
+  this->_selects.push_back(vitoselect);
+  CallbackDatapoint *dp = new CallbackDatapoint(
+      vitoselect->get_address(), vitoselect->get_length(),
+      [=](const std::vector<uint8_t> &data) { vitoselect->on_update(data); });
+  this->register_datapoint(dp);
+}
+
+void VitoConnect::write_datapoint(uint16_t address, uint8_t length,
+                                  uint8_t *value) {
+  ESP_LOGD(TAG, "Initiating write to address 0x%04X, length %d", address,
+           length);
+  if (_optolink) {
+    // Pass nullptr for arg as we are not using per-request callback for now
+    if (_optolink->write(address, length, value, nullptr)) {
+      ESP_LOGD(TAG, "Write queued successfully");
+    } else {
+      ESP_LOGE(TAG, "Write queue failed/full");
+    }
+  } else {
+    ESP_LOGE(TAG, "Optolink not initialized");
+  }
+}
+
+void VitoConnect::write_datapoint(uint16_t address, uint8_t length,
+                                  std::vector<uint8_t> value) {
+  this->write_datapoint(address, length, value.data());
+}
+
+void VitoConnect::loop() { _optolink->loop(); }
 
 void VitoConnect::update() {
   // This will be called every "update_interval" milliseconds.
   ESP_LOGD(TAG, "Schedule sensor update");
-  
-  for (Datapoint* dp : this->_datapoints) {
-      CbArg* arg = new CbArg(this, dp);   
-      if (_optolink->read(dp->getAddress(), dp->getLength(), reinterpret_cast<void*>(arg))) {
-      } else {
-          delete arg;
-      }
+
+  for (Datapoint *dp : this->_datapoints) {
+    CbArg *arg = new CbArg(this, dp);
+    if (_optolink->read(dp->getAddress(), dp->getLength(),
+                        reinterpret_cast<void *>(arg))) {
+    } else {
+      delete arg;
+    }
   }
 }
 
-void VitoConnect::_onData(uint8_t* data, uint8_t len, void* arg) {
-  CbArg* cbArg = reinterpret_cast<CbArg*>(arg);
+void VitoConnect::_onData(uint8_t *data, uint8_t len, void *arg) {
+  CbArg *cbArg = reinterpret_cast<CbArg *>(arg);
   cbArg->dp->decode(data, len, cbArg->dp);
   delete cbArg;
 }
 
-void VitoConnect::_onError(uint8_t error, void* arg) {
+void VitoConnect::_onError(uint8_t error, void *arg) {
   ESP_LOGD(TAG, "Error received: %d", error);
-  CbArg* cbArg = reinterpret_cast<CbArg*>(arg);
-  if (cbArg->v->_onErrorCb) cbArg->v->_onErrorCb(error, cbArg->dp);
+  CbArg *cbArg = reinterpret_cast<CbArg *>(arg);
+  if (cbArg->v->_onErrorCb)
+    cbArg->v->_onErrorCb(error, cbArg->dp);
   delete cbArg;
 }
 
-}  // namespace vitoconnect
-}  // namespace esphome
+} // namespace vitoconnect
+} // namespace esphome

@@ -19,16 +19,20 @@
 
 #pragma once
 
-#include "esphome/core/component.h"
+#include "esphome/components/sensor/sensor.h"
 #include "esphome/components/uart/uart.h"
 #include "esphome/components/uart/uart_component.h"
-#include "esphome/components/sensor/sensor.h"
+#include "esphome/core/component.h"
+
 // #include "vitoconnect_DP.h"
-#include "vitoconnect_optolink.h"
-#include "vitoconnect_optolinkP300.h"
-#include "vitoconnect_optolinkKW.h"
-#include "vitoconnect_optolinkGWG.h"
 #include "vitoconnect_datapoint.h"
+#include "vitoconnect_number.h"
+#include "vitoconnect_optolink.h"
+#include "vitoconnect_optolinkGWG.h"
+#include "vitoconnect_optolinkKW.h"
+#include "vitoconnect_optolinkP300.h"
+#include "vitoconnect_select.h"
+#include "vitoconnect_switch.h"
 
 using namespace std;
 
@@ -36,57 +40,94 @@ namespace esphome {
 namespace vitoconnect {
 
 /**
- * @brief VitoConnect manages the esphome components, their datapoints and optolink to your Viessmann device.
- * 
+ * @brief VitoConnect manages the esphome components, their datapoints and
+ * optolink to your Viessmann device.
+ *
  */
-class VitoConnect : public uart::UARTDevice, public PollingComponent {
-  public:
+class CallbackDatapoint : public Datapoint {
+public:
+  CallbackDatapoint(uint16_t address, uint8_t length,
+                    std::function<void(const std::vector<uint8_t> &)> callback)
+      : callback_(callback) {
+    this->setAddress(address);
+    this->setLength(length);
+  }
 
-    VitoConnect() : PollingComponent(0) {}
-    
-    void setup() override;
-    void loop() override;
-    void update() override;
+  void decode(uint8_t *data, uint8_t length, Datapoint *dp = nullptr) override {
+    if (this->callback_) {
+      std::vector<uint8_t> vec(data, data + length);
+      this->callback_(vec);
+    }
+  }
 
-    void set_protocol(std::string protocol) { this->protocol = protocol; }
-    void register_datapoint(Datapoint *datapoint);
-
-    void onData(std::function<void(const uint8_t* data, uint8_t length, Datapoint* dp)> callback);
-    void onError(std::function<void(uint8_t, Datapoint*)> callback);
-
-    /**
-     * @brief Enqueue a datapoint for writing.
-     * 
-     * The onData callback will be launched on success.
-     * 
-     * @tparam D Type of datapoint (inherited from class `Datapoint`)
-     * @tparam T Type of the value to be written
-     * @param datapoint Datapoint to be read, passed by reference.
-     * @param value Value to be written
-     * @return true Enqueueing was successful
-     * @return false Enqueueing failed (eg. queue full)
-     */
-    // template<class D, typename T>
-    // bool write(D& datapoint, T value);  // NOLINT todo: make it a const ref or pointer?
-
-  protected:
-
-  private:
-    Optolink* _optolink;
-    std::vector<Datapoint*> _datapoints;
-    std::string protocol;
-    struct CbArg {
-      CbArg(VitoConnect* vw, Datapoint* d) :
-        v(vw),
-        dp(d) {}
-      VitoConnect* v;
-      Datapoint* dp;
-    };
-    static void _onData(uint8_t* data, uint8_t len, void* arg);
-    static void _onError(uint8_t error, void* arg);
-
-    std::function<void(uint8_t, Datapoint*)> _onErrorCb;
+private:
+  std::function<void(const std::vector<uint8_t> &)> callback_;
 };
 
-}  // namespace vitoconnect
-}  // namespace esphome
+class VitoConnect : public uart::UARTDevice, public PollingComponent {
+public:
+  VitoConnect() : PollingComponent(0) {}
+
+  void setup() override;
+  void loop() override;
+  void update() override;
+
+  void set_protocol(std::string protocol) { this->protocol = protocol; }
+  void register_datapoint(Datapoint *datapoint);
+  void register_switch(VitoSwitch *vitoswitch);
+  void register_number(VitoNumber *vitonumber);
+
+  void
+  onData(std::function<void(const uint8_t *data, uint8_t length, Datapoint *dp)>
+             callback);
+  // Duplicate removed
+
+  void register_select(VitoSelect *vitoselect);
+
+  // Generic write method
+  void write_datapoint(uint16_t address, uint8_t length, uint8_t *value);
+  void write_datapoint(uint16_t address, uint8_t length,
+                       std::vector<uint8_t> value);
+
+  void onError(std::function<void(uint8_t, Datapoint *)> callback);
+
+  /**
+   * @brief Enqueue a datapoint for writing.
+   *
+   * The onData callback will be launched on success.
+   *
+   * @tparam D Type of datapoint (inherited from class `Datapoint`)
+   * @tparam T Type of the value to be written
+   * @param datapoint Datapoint to be read, passed by reference.
+   * @param value Value to be written
+   * @return true Enqueueing was successful
+   * @return false Enqueueing failed (eg. queue full)
+   *
+   * NOTE: This template is currently commented out in original file or not
+   * implemented.
+   */
+  // template<class D, typename T>
+  // bool write(D& datapoint, T value);  // NOLINT todo: make it a const ref or
+  // pointer?
+
+protected:
+private:
+  Optolink *_optolink;
+  std::vector<Datapoint *> _datapoints;
+  std::vector<VitoSwitch *> _switches;
+  std::vector<VitoNumber *> _numbers;
+  std::vector<VitoSelect *> _selects;
+  std::string protocol;
+  struct CbArg {
+    CbArg(VitoConnect *vw, Datapoint *d) : v(vw), dp(d) {}
+    VitoConnect *v;
+    Datapoint *dp;
+  };
+  static void _onData(uint8_t *data, uint8_t len, void *arg);
+  static void _onError(uint8_t error, void *arg);
+
+  std::function<void(uint8_t, Datapoint *)> _onErrorCb;
+};
+
+} // namespace vitoconnect
+} // namespace esphome
