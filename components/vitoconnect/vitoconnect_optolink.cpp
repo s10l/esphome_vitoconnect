@@ -32,7 +32,9 @@ Optolink::Optolink(uart::UARTDevice* uart) :
   _uart(uart),
   _queue(VITOWIFI_MAX_QUEUE_LENGTH),
   _onData(nullptr),
-  _onError(nullptr) {}
+  _onError(nullptr),
+  _onQueueEmpty(nullptr),
+  _onQueueEmptyArg(nullptr) {}
 
 Optolink::~Optolink() {
   // nothing to do
@@ -65,13 +67,22 @@ bool Optolink::write(uint16_t address, uint8_t length, uint8_t* data, void* arg)
 }
 
 void Optolink::_tryOnData(uint8_t* data, uint8_t len) {
-  if (_onData) _onData(data, len, _queue.front()->arg);
+  void *arg = _queue.front()->arg;
+  if (_onData) _onData(data, len, arg);
   _queue.pop();
+
+  if (_queue.size() == 0 && _onQueueEmpty && _onQueueEmptyArg) {
+    _onQueueEmpty(_onQueueEmptyArg);
+  }
 }
 
 void Optolink::_tryOnError(uint8_t error) {
   if (_onError) _onError(error, _queue.front()->arg);
   _queue.pop();
+
+  if (_queue.size() == 0 && _onQueueEmpty && _onQueueEmptyArg) {
+    _onQueueEmpty(_onQueueEmptyArg);
+  }
 }
 
 }  // namespace vitoconnect

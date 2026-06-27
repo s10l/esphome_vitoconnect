@@ -96,6 +96,7 @@ enum OptolinkError : uint8_t {
 
 typedef void (*OnDataArgCallback)(uint8_t* data, uint8_t len, void* arg);
 typedef void (*OnErrorArgCallback)(uint8_t error, void* arg);
+typedef void (*OnQueueEmptyCallback)(void* arg);
 
 /**
  * @brief Base class for the Optolink.
@@ -141,6 +142,17 @@ class Optolink {
    * @param callback Function to be called when en error is encountered.
    */
   void onError(OnErrorArgCallback callback);
+
+  /**
+   * @brief Attach a callback to be called when the queue becomes empty.
+   * 
+   * @param callback Function to be called when the queue becomes empty.
+   * @param arg Argument to pass to the callback. Defaults to nullptr.
+   */
+  void onQueueEmpty(OnQueueEmptyCallback callback, void* arg = nullptr) {
+    _onQueueEmpty = callback;
+    _onQueueEmptyArg = arg;
+  }
 
   /**
    * @brief Read a datapoint with specified properties
@@ -195,6 +207,8 @@ class Optolink {
   SimpleQueue<OptolinkDP> _queue;  // TODO(bertmelis): add semaphore to ESP32 version to guard access to queue
   OnDataArgCallback _onData;
   OnErrorArgCallback _onError;
+  OnQueueEmptyCallback _onQueueEmpty;
+  void* _onQueueEmptyArg;
 };
 
 }  // namespace vitoconnect
