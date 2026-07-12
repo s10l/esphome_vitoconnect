@@ -28,7 +28,7 @@ CONFIG_SCHEMA = cv.Schema(
         cv.Optional(
             CONF_UPDATE_INTERVAL, default="60s"
         ): cv.positive_time_period_milliseconds,
-        cv.Optional(CONF_QUEUE_SIZE, default=20): cv.int_range(min=1, max=100),
+        cv.Optional(CONF_QUEUE_SIZE, default=20): cv.int_range(min=1, max=1000),
     }
 ).extend(uart.UART_DEVICE_SCHEMA)
 

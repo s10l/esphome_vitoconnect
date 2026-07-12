@@ -22,7 +22,6 @@
 #include "esphome/core/component.h"
 #include "esphome/components/uart/uart.h"
 #include "esphome/components/uart/uart_component.h"
-#include "esphome/components/sensor/sensor.h"
 #include <algorithm>
 // #include "vitoconnect_DP.h"
 #include "vitoconnect_optolink.h"

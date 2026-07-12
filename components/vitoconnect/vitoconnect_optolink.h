@@ -199,7 +199,6 @@ class Optolink {
    */
   virtual void loop() = 0;
 
-
  protected:
   void _tryOnData(uint8_t* data, uint8_t len);
   void _tryOnError(uint8_t error);

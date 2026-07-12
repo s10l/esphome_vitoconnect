@@ -108,6 +108,10 @@ Use it for values that rarely change, such as static configuration values or cou
 Tested with OptoLink ESP32 adapter from here:
 <https://github.com/openv/openv/wiki/Bauanleitung-ESP32-Adafruit-Feather-Huzzah32-and-Proto-Wing>
 
+## ESP32-C3 Super Mini build
+
+Hardware notes, wiring images, Home Assistant screenshots and 3D print files for an ESP32-C3 Super Mini Optolink build are collected in [docs/README.md](docs/README.md).
+
 ## Credits
 
 Built based on [VitoWifi] by [Bert Melis] and inspired by [vitowifi_esphome] by [Philipp Hack].

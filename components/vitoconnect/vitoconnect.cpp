@@ -136,6 +136,9 @@ void VitoConnect::update() {
   }
   
   ESP_LOGD(TAG, "Queued %d datapoints (estimated time: %d ms)", queued_count, estimated_time);
+  if (queued_count == 0) {
+    this->_last_update_start = 0;
+  }
 }
 
 void VitoConnect::runInitialChecks() {
@@ -144,19 +147,26 @@ void VitoConnect::runInitialChecks() {
   this->_last_update_start = millis();
   if (this->_datapointsOnce.size() == 0) {
     this->_initial_checks_done = true;
+    this->_last_update_start = 0;
     return;
   }
+  bool queued_any = false;
   for (Datapoint* dp : this->_datapointsOnce) {
     if (this->queueDatapointRead(dp)) {
+      queued_any = true;
       ESP_LOGV(TAG, "Queued initial check for datapoint 0x%04X", dp->getAddress());
     } else {
       ESP_LOGW(TAG, "Failed to queue initial check for datapoint 0x%04X", dp->getAddress());
     }
   }
+  if (!queued_any) {
+    this->_initial_checks_done = true;
+    this->_last_update_start = 0;
+  }
 }
 
 uint32_t VitoConnect::getAverageReadTime() {
-  if (this->_total_read_time > 0) {
+  if (this->_total_read_time > 0 && this->_datapoints.size() > 0) {
     return this->_total_read_time / this->_datapoints.size();
   }
   
@@ -186,13 +196,12 @@ bool VitoConnect::queueDatapointRead(Datapoint* dp) {
   return false;
 }
 
-
 void VitoConnect::_onData(uint8_t* data, uint8_t len, void* arg) {
   CbArg* cbArg = reinterpret_cast<CbArg*>(arg);
   
   cbArg->v->_total_reads++;
   uint32_t total_read_duration = millis() - cbArg->v->_last_update_start;
-  uint32_t avg_read_time = total_read_duration / cbArg->v->_total_reads;
+  uint32_t avg_read_time = cbArg->v->_total_reads > 0 ? total_read_duration / cbArg->v->_total_reads : 0;
     
   ESP_LOGV(TAG, "Read completed. Avg read time: %d ms, Total reads: %d, Total duration: %d ms", 
              avg_read_time, cbArg->v->_total_reads, total_read_duration);
