@@ -9,7 +9,7 @@ Address, length and post processing can be retrieved from <https://github.com/op
 
 ```yaml
 external_components:
-  - source: github://dannerph/esphome_vitoconnect
+  - source: github://MichaelSp/esphome_vitoconnect
 
 esphome:
   name: viessmann-reader
@@ -79,6 +79,10 @@ binary_sensor:
 
 Tested with OptoLink ESP32 adapter from here:
 <https://github.com/openv/openv/wiki/Bauanleitung-ESP32-Adafruit-Feather-Huzzah32-and-Proto-Wing>
+
+## ESP32-C3 Super Mini build
+
+Hardware notes, wiring images, Home Assistant screenshots and 3D print files for an ESP32-C3 Super Mini Optolink build are collected in [docs/README.md](docs/README.md).
 
 ## Credits
 

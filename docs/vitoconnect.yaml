@@ -1,0 +1,12 @@
+substitutions:
+  name: optolink
+
+packages:
+  - !include preset/basic.yaml
+  # - !include preset/logger.yaml
+  # - !include preset/debug-text.yaml
+
+  - !include esp32-c3/board.yaml
+  - !include esp32-c3/uart.yaml
+  - !include esp32-c3/vitoconnect.yaml
+  - !include esp32-c3/vitocal-300g.yaml
