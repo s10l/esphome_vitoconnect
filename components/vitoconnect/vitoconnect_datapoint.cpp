@@ -30,8 +30,10 @@ namespace vitoconnect {
 
 std::function<void(uint8_t[], uint8_t, Datapoint* dp)> Datapoint::_stdOnData = nullptr;
 
-Datapoint::Datapoint(){
-  // empty
+Datapoint::Datapoint() :
+  _address(0),
+  _length(0),
+  onlyCheckOnce(false) {
 }
 
 Datapoint::~Datapoint() {

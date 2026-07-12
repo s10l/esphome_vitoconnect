@@ -14,7 +14,7 @@ The build combines:
 - Home Assistant integration through ESPHome
 - 3D printed forms for holding the ESP32-C3 board and the Viessmann V optical connector
 
-The matching ESPHome package entry point is [vitoconnect.yaml](vitoconnect.yaml).
+The matching minimal ESPHome example is [vitoconnect.yaml](vitoconnect.yaml).
 
 ## Images
 
@@ -33,24 +33,18 @@ The printable forms are in [forms/](forms/):
 
 ## Firmware
 
-For a standalone example, see:
+For standalone examples, see:
 
 - [../example-esp32.yaml](../example-esp32.yaml)
 - [../example-esp8266.yaml](../example-esp8266.yaml)
 
-For the documented ESP32-C3 package setup, start with:
+For the documented ESP32-C3 Super Mini setup, start with [vitoconnect.yaml](vitoconnect.yaml).
 
-```yaml
-substitutions:
-  name: optolink
+## Address Catalog
 
-packages:
-  - !include preset/basic.yaml
-  - !include esp32-c3/board.yaml
-  - !include esp32-c3/uart.yaml
-  - !include esp32-c3/vitoconnect.yaml
-  - !include esp32-c3/vitocal-300g.yaml
-```
+The Vitocal 300-G / VBC700 BW/WW address catalog is stored in [addresses/vitocal-300g-vbc700-bw-ww.csv](addresses/vitocal-300g-vbc700-bw-ww.csv).
+
+It contains 914 datapoints with address, conversion, read/write flag, byte length, unit, data type, limits and enum descriptions where available. Keep example YAML small and add datapoints from this catalog as needed.
 
 ## OpenV Wiki Placement
 
