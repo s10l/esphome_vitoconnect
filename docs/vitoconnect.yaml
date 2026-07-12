@@ -67,4 +67,8 @@ sensor:
     filters:
       - multiply: 0.1
 
+button:
+  - platform: vitoconnect
+    name: "Check-Once Werte aktualisieren"
+
 # Add more datapoints from docs/addresses/vitocal-300g-vbc700-bw-ww.csv.

@@ -59,3 +59,21 @@ binary_sensor:
   - platform: vitoconnect
     name: "Status Verdichter"
     address: 0x0400
+
+number:
+  - platform: vitoconnect
+    name: "Warmwasser Solltemperatur"
+    address: 0x6300
+    length: 2
+    min_value: 10
+    max_value: 60
+    step: 1
+
+switch:
+  - platform: vitoconnect
+    name: "Warmwasser Aktiv"
+    address: 0x6301
+
+button:
+  - platform: vitoconnect
+    name: "Check-Once Werte aktualisieren"

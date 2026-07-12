@@ -43,7 +43,7 @@ vitoconnect:
   uart_id: uart_vitoconnect
   protocol: P300                # set protocol to GWG, KW or P300
   update_interval: 30s          # default: 60s
-  queue_size: 40                # max pending Optolink requests, default: 20, range: 1-100
+  queue_size: 40                # max pending Optolink requests, default: 20, range: 1-500
 
 sensor:
   - platform: vitoconnect
@@ -77,6 +77,24 @@ binary_sensor:
     name: "Status Verdichter"
     address: 0x0400
     check_once: false           # default: false
+
+number:
+  - platform: vitoconnect
+    name: "Warmwasser Solltemperatur"
+    address: 0x6300
+    length: 2
+    min_value: 10
+    max_value: 60
+    step: 1
+
+switch:
+  - platform: vitoconnect
+    name: "Warmwasser Aktiv"
+    address: 0x6301
+
+button:
+  - platform: vitoconnect
+    name: "Check-Once Werte aktualisieren"
 ```
 
 ### `queue_size`
@@ -84,7 +102,7 @@ binary_sensor:
 `queue_size` controls how many Optolink read/write requests can wait in the internal queue at once.
 It is useful when one update cycle contains more datapoints than the default queue can hold, or when many datapoints use `check_once: true` during startup.
 
-Default is `20`. Valid range is `1` to `100`.
+Default is `20`. Valid range is `1` to `500`.
 
 `queue_size` does not make the boiler answer faster and does not change `update_interval`. If the queue is too small, extra datapoints may fail to queue and can be skipped for that cycle.
 

@@ -51,6 +51,8 @@ class VitoConnect : public uart::UARTDevice, public PollingComponent {
 
     void set_protocol(std::string protocol) { this->protocol = protocol; }
     void register_datapoint(Datapoint *datapoint);
+    bool write_datapoint(Datapoint *datapoint, void *value);
+    bool refresh_once_datapoints();
 
     void onData(std::function<void(const uint8_t* data, uint8_t length, Datapoint* dp)> callback);
     void onError(std::function<void(uint8_t, Datapoint*)> callback);
@@ -90,9 +92,15 @@ class VitoConnect : public uart::UARTDevice, public PollingComponent {
     struct CbArg {
       CbArg(VitoConnect* vw, Datapoint* d) :
         v(vw),
-        dp(d) {}
+        dp(d),
+        write(false),
+        write_length(0),
+        write_data{0} {}
       VitoConnect* v;
       Datapoint* dp;
+      bool write;
+      uint8_t write_length;
+      uint8_t write_data[MAX_DP_LENGTH];
     };
     static void _onData(uint8_t* data, uint8_t len, void* arg);
     static void _onError(uint8_t error, void* arg);
@@ -104,7 +112,12 @@ class VitoConnect : public uart::UARTDevice, public PollingComponent {
     uint32_t getAverageReadTime();
     bool shouldQueueDatapoint(Datapoint* dp, uint32_t time_remaining, uint32_t avg_read_time);
     bool queueDatapointRead(Datapoint* dp);
+    bool queueDatapointWrite(Datapoint* dp, void* value);
     void runInitialChecks();
+    void runOnceRefresh();
+    bool isBusy();
+    bool _once_refresh_pending = false;
+    bool _once_refresh_active = false;
 };
 
 }  // namespace vitoconnect

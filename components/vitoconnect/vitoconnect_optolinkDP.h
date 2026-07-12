@@ -67,14 +67,24 @@ class OptolinkDP {
 
   /**
    * @brief Copy constructor for the OptolinkDP class.
-   * 
+   *
    * @param obj Object to be copied.
    */
   OptolinkDP(const OptolinkDP& obj);
 
   /**
+   * @brief Copy assignment for the OptolinkDP class.
+   *
+   * The queue stores datapoints in a preallocated buffer and assigns into it,
+   * so write payloads must be deep-copied here too.
+   *
+   * @param obj Object to be copied.
+   */
+  OptolinkDP& operator=(const OptolinkDP& obj);
+
+  /**
    * @brief Destroy the OptolinkDP object
-   * 
+   *
    */
   ~OptolinkDP();
   uint16_t address;  //!< Address of the datapoint, 2 bytes

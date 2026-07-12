@@ -199,6 +199,7 @@ class Optolink {
    */
   virtual void loop() = 0;
 
+  size_t queue_size() { return _queue.size(); }
  protected:
   void _tryOnData(uint8_t* data, uint8_t len);
   void _tryOnError(uint8_t error);

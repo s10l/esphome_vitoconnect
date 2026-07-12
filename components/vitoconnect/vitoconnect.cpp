@@ -94,6 +94,9 @@ void VitoConnect::register_datapoint(Datapoint *datapoint) {
 
 void VitoConnect::loop() {
     _optolink->loop();
+    if (this->_once_refresh_pending && !this->isBusy()) {
+      this->runOnceRefresh();
+    }
 }
 
 void VitoConnect::update() {
@@ -105,6 +108,10 @@ void VitoConnect::update() {
   }
   if (!this->_initial_checks_done){
     ESP_LOGD(TAG, "Initial checks not completed. Skipping update until done.");
+    return;
+  }
+  if (this->_once_refresh_pending || this->_once_refresh_active) {
+    ESP_LOGD(TAG, "Manual one-time refresh active. Skipping regular update.");
     return;
   }
   if (this->_last_update_start != 0) {
@@ -198,18 +205,103 @@ bool VitoConnect::queueDatapointRead(Datapoint* dp) {
   return false;
 }
 
+bool VitoConnect::queueDatapointWrite(Datapoint* dp, void* value) {
+  CbArg* arg = new CbArg(this, dp);
+  arg->write = true;
+  arg->write_length = dp->getLength();
+  dp->encode(arg->write_data, arg->write_length, value);
+
+  if (this->_last_update_start == 0) {
+    this->_last_update_start = millis();
+    this->_total_reads = 0;
+  }
+
+  if (_optolink->write(dp->getAddress(), dp->getLength(), arg->write_data, reinterpret_cast<void*>(arg))) {
+    return true;
+  }
+
+  delete arg;
+  if (_optolink->queue_size() == 0) {
+    this->_last_update_start = 0;
+  }
+  return false;
+}
+
+bool VitoConnect::write_datapoint(Datapoint *datapoint, void *value) {
+  if (!_optolink) {
+    ESP_LOGW(TAG, "Cannot write datapoint 0x%04X: optolink not initialized", datapoint->getAddress());
+    return false;
+  }
+  ESP_LOGD(TAG, "Queue write for datapoint 0x%04X", datapoint->getAddress());
+  return this->queueDatapointWrite(datapoint, value);
+}
+
+bool VitoConnect::refresh_once_datapoints() {
+  if (!this->_initial_checks_done) {
+    ESP_LOGD(TAG, "Initial checks still running. Queuing one-time refresh.");
+    this->_once_refresh_pending = true;
+    return true;
+  }
+  if (this->isBusy()) {
+    ESP_LOGD(TAG, "Optolink busy. Queuing one-time refresh.");
+    this->_once_refresh_pending = true;
+    return true;
+  }
+  this->runOnceRefresh();
+  return true;
+}
+
+bool VitoConnect::isBusy() {
+  return this->_last_update_start != 0 || (this->_optolink && this->_optolink->queue_size() > 0);
+}
+
+void VitoConnect::runOnceRefresh() {
+  ESP_LOGD(TAG, "Refreshing datapoints marked as 'check_once'");
+  this->_once_refresh_pending = false;
+  this->_once_refresh_active = true;
+  this->_last_update_start = millis();
+  this->_total_reads = 0;
+
+  if (this->_datapointsOnce.size() == 0) {
+    ESP_LOGD(TAG, "No one-time datapoints registered.");
+    this->_once_refresh_active = false;
+    this->_last_update_start = 0;
+    return;
+  }
+
+  bool queued_any = false;
+  for (Datapoint* dp : this->_datapointsOnce) {
+    if (this->queueDatapointRead(dp)) {
+      queued_any = true;
+      ESP_LOGV(TAG, "Queued one-time refresh for datapoint 0x%04X", dp->getAddress());
+    } else {
+      ESP_LOGW(TAG, "Failed to queue one-time refresh for datapoint 0x%04X", dp->getAddress());
+    }
+  }
+
+  if (!queued_any) {
+    this->_once_refresh_active = false;
+    this->_last_update_start = 0;
+  }
+}
+
 void VitoConnect::_onData(uint8_t* data, uint8_t len, void* arg) {
   CbArg* cbArg = reinterpret_cast<CbArg*>(arg);
 
-  cbArg->v->_total_reads++;
+  if (!cbArg->write) {
+    cbArg->v->_total_reads++;
+  }
   uint32_t total_read_duration = millis() - cbArg->v->_last_update_start;
   uint32_t avg_read_time = cbArg->v->_total_reads > 0 ? total_read_duration / cbArg->v->_total_reads : 0;
 
   ESP_LOGV(TAG, "Read completed. Avg read time: %d ms, Total reads: %d, Total duration: %d ms",
              avg_read_time, cbArg->v->_total_reads, total_read_duration);
 
-
-  cbArg->dp->decode(data, len, cbArg->dp);
+  if (cbArg->write) {
+    cbArg->dp->decode(cbArg->write_data, cbArg->write_length, cbArg->dp);
+  } else {
+    cbArg->dp->decode(data, len, cbArg->dp);
+  }
   delete cbArg;
 }
 
@@ -225,6 +317,7 @@ void VitoConnect::_onQueueEmpty(void *arg) {
   ESP_LOGD(TAG, "Optolink queue is empty.");
 
   v->_initial_checks_done = true;
+  v->_once_refresh_active = false;
   if (v->_last_update_start > 0) {
     v->_total_read_time = millis() - v->_last_update_start;
     ESP_LOGD(TAG, "Update cycle completed in %d ms, %d datapoints read", v->_total_read_time, v->_total_reads);
