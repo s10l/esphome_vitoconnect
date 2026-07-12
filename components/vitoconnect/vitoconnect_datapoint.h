@@ -41,9 +41,12 @@ class Datapoint {
 
   void setAddress(uint16_t address) {  this->_address = address; };
   uint16_t getAddress() { return this->_address; };
-  
+
   void setLength(uint8_t length) {  this->_length = length; };
   uint8_t getLength() { return this->_length; };
+
+  void setCheckOnce(bool checkOnce) { this->onlyCheckOnce = checkOnce; };
+  bool getCheckOnce() { return this->onlyCheckOnce; };
 
   static void onData(std::function<void(uint8_t[], uint8_t, Datapoint* dp)> callback);
   void onError(uint8_t, Datapoint* dp);
@@ -54,6 +57,7 @@ class Datapoint {
  protected:
   uint16_t _address;
   uint8_t _length;
+  bool onlyCheckOnce;
   static std::function<void(uint8_t[], uint8_t, Datapoint* dp)> _stdOnData;
 };
 

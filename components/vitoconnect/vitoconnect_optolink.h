@@ -27,13 +27,13 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * @file Optolink.h
  * @brief Optolink API definitions
  *
- * This file contains all method definitions for the Optolink. 
- * The optolink object is the high level class and contains the interface 
- * and implements the queue system. Protocol details are implemented in the 
+ * This file contains all method definitions for the Optolink.
+ * The optolink object is the high level class and contains the interface
+ * and implements the queue system. Protocol details are implemented in the
  * inherited classes.
- * 
+ *
  * The optolink hardware implementation could be as follows:
- * 
+ *
  *                          3.3V
  *                           O
  *                           |
@@ -58,7 +58,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *                                   |
  *                                  ---
  *                                  GND
- * 
+ *
  */
 
 #pragma once
@@ -96,11 +96,12 @@ enum OptolinkError : uint8_t {
 
 typedef void (*OnDataArgCallback)(uint8_t* data, uint8_t len, void* arg);
 typedef void (*OnErrorArgCallback)(uint8_t error, void* arg);
+typedef void (*OnQueueEmptyCallback)(void* arg);
 
 /**
  * @brief Base class for the Optolink.
- * 
- * This class is a pure virtual class. Only the Optolink implemented in the 
+ *
+ * This class is a pure virtual class. Only the Optolink implemented in the
  * different protocol classes are to be used. This class defines the public
  * API.
  */
@@ -108,7 +109,7 @@ class Optolink {
  public:
   /**
    * @brief Construct the Optolink object.
-   * 
+   *
    * @param uart UARTDevice object to be used. Pass by reference.
    */
   explicit Optolink(uart::UARTDevice* uart);
@@ -116,38 +117,49 @@ class Optolink {
 
   /**
    * @brief Attach a callback for successful requests.
-   * 
+   *
    * @param callback Function to be called when data is received.
    */
   void onData(void (*callback)(uint8_t* data, uint8_t len));
 
   /**
    * @brief Attach a callback with an argument for successful requests.
-   * 
+   *
    * @param callback Function to be called when data is received.
    */
   void onData(OnDataArgCallback callback);
 
   /**
    * @brief Attach the callback for erroneous requests.
-   * 
+   *
    * @param callback Function to be called when en error is encountered.
    */
   void onError(void (*callback)(uint8_t error));
 
   /**
    * @brief Attach the callback with an argument for erroneous requests.
-   * 
+   *
    * @param callback Function to be called when en error is encountered.
    */
   void onError(OnErrorArgCallback callback);
 
   /**
+   * @brief Attach a callback to be called when the queue becomes empty.
+   *
+   * @param callback Function to be called when the queue becomes empty.
+   * @param arg Argument to pass to the callback. Defaults to nullptr.
+   */
+  void onQueueEmpty(OnQueueEmptyCallback callback, void* arg = nullptr) {
+    _onQueueEmpty = callback;
+    _onQueueEmptyArg = arg;
+  }
+
+  /**
    * @brief Read a datapoint with specified properties
-   * 
+   *
    * Read (length) bytes from (address). On success, the data will be returned
    * by the onData handler; On error, the onError handler will be called.
-   * 
+   *
    * @param address Address of the datapoint (eg. 0x1234).
    * @param length Length in bytes of the datapoint. This is also the length
    *        of the value when writing.
@@ -159,14 +171,14 @@ class Optolink {
 
   /**
    * @brief Write to a datapoint with specified properties
-   * 
+   *
    * Write (length) bytes to (address). On success, the written data is
    * returned by the onData handler. On failure, the onError will be called.
-   * 
+   *
    * @param address Address of the datapoint (eg. 0x1234).
    * @param length Length in bytes of the datapoint. This is also the length
    *        of the value when writing.
-   * @param data Pointer to data to write (set to nullptr when reading). This 
+   * @param data Pointer to data to write (set to nullptr when reading). This
    *        data will be copied so it is allowed to go out of scope after
    *        passing the this object.
    * @param arg Argument to use for the callback. Defaults to nullptr.
@@ -176,7 +188,7 @@ class Optolink {
   bool write(uint16_t address, uint8_t length, uint8_t* data, void* arg = nullptr);
 
   /**
-   * @brief Pure virtual method to start the Optolink (implemented in protocol 
+   * @brief Pure virtual method to start the Optolink (implemented in protocol
    *        classes).
    */
   virtual void begin() = 0;
@@ -187,7 +199,6 @@ class Optolink {
    */
   virtual void loop() = 0;
 
-
  protected:
   void _tryOnData(uint8_t* data, uint8_t len);
   void _tryOnError(uint8_t error);
@@ -195,6 +206,8 @@ class Optolink {
   SimpleQueue<OptolinkDP> _queue;  // TODO(bertmelis): add semaphore to ESP32 version to guard access to queue
   OnDataArgCallback _onData;
   OnErrorArgCallback _onError;
+  OnQueueEmptyCallback _onQueueEmpty;
+  void* _onQueueEmptyArg;
 };
 
 }  // namespace vitoconnect

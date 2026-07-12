@@ -22,7 +22,7 @@
 #include "esphome/core/component.h"
 #include "esphome/components/uart/uart.h"
 #include "esphome/components/uart/uart_component.h"
-#include "esphome/components/sensor/sensor.h"
+#include <algorithm>
 // #include "vitoconnect_DP.h"
 #include "vitoconnect_optolink.h"
 #include "vitoconnect_optolinkP300.h"
@@ -37,28 +37,30 @@ namespace vitoconnect {
 
 /**
  * @brief VitoConnect manages the esphome components, their datapoints and optolink to your Viessmann device.
- * 
+ *
  */
 class VitoConnect : public uart::UARTDevice, public PollingComponent {
   public:
 
     VitoConnect() : PollingComponent(0) {}
-    
+
     void setup() override;
     void loop() override;
     void update() override;
+    void dump_config() override;
 
     void set_protocol(std::string protocol) { this->protocol = protocol; }
     void register_datapoint(Datapoint *datapoint);
 
     void onData(std::function<void(const uint8_t* data, uint8_t length, Datapoint* dp)> callback);
     void onError(std::function<void(uint8_t, Datapoint*)> callback);
+    void onQueueEmpty(std::function<void()> callback);
 
     /**
      * @brief Enqueue a datapoint for writing.
-     * 
+     *
      * The onData callback will be launched on success.
-     * 
+     *
      * @tparam D Type of datapoint (inherited from class `Datapoint`)
      * @tparam T Type of the value to be written
      * @param datapoint Datapoint to be read, passed by reference.
@@ -74,7 +76,17 @@ class VitoConnect : public uart::UARTDevice, public PollingComponent {
   private:
     Optolink* _optolink;
     std::vector<Datapoint*> _datapoints;
+    std::vector<Datapoint*> _datapointsOnce;
+    std::vector<Datapoint*> _datapointsForUpdate;
     std::string protocol;
+
+    // Timing tracking
+    uint32_t _last_update_start = 0;
+    uint32_t _total_reads = 0;
+    uint32_t _total_read_time = 0;
+    bool _initial_checks_done = false;
+    bool _initial_check_started = false;
+
     struct CbArg {
       CbArg(VitoConnect* vw, Datapoint* d) :
         v(vw),
@@ -84,8 +96,15 @@ class VitoConnect : public uart::UARTDevice, public PollingComponent {
     };
     static void _onData(uint8_t* data, uint8_t len, void* arg);
     static void _onError(uint8_t error, void* arg);
+    static void _onQueueEmpty(void* arg);
 
     std::function<void(uint8_t, Datapoint*)> _onErrorCb;
+
+    // Helper methods for update cycle
+    uint32_t getAverageReadTime();
+    bool shouldQueueDatapoint(Datapoint* dp, uint32_t time_remaining, uint32_t avg_read_time);
+    bool queueDatapointRead(Datapoint* dp);
+    void runInitialChecks();
 };
 
 }  // namespace vitoconnect

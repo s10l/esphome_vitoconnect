@@ -9,7 +9,7 @@ Address, length and post processing can be retrieved from <https://github.com/op
 
 ```yaml
 external_components:
-  - source: github://dannerph/esphome_vitoconnect
+  - source: github://MichaelSp/esphome_vitoconnect
 
 esphome:
   name: viessmann-reader
@@ -42,7 +42,8 @@ uart:
 vitoconnect:
   uart_id: uart_vitoconnect
   protocol: P300                # set protocol to GWG, KW or P300
-  update_interval: 30s
+  update_interval: 30s          # default: 60s
+  queue_size: 40                # max pending Optolink requests, default: 20, range: 1-100
 
 sensor:
   - platform: vitoconnect
@@ -57,6 +58,7 @@ sensor:
     name: "Betriebsstunden Verdichter"
     address: 0x0580
     length: 4
+    check_once: true            # read once at startup, then skip regular polling
     unit_of_measurement: "h"
     accuracy_decimals: 1
     filters:
@@ -74,10 +76,41 @@ binary_sensor:
   - platform: vitoconnect
     name: "Status Verdichter"
     address: 0x0400
+    check_once: false           # default: false
 ```
+
+### `queue_size`
+
+`queue_size` controls how many Optolink read/write requests can wait in the internal queue at once.
+It is useful when one update cycle contains more datapoints than the default queue can hold, or when many datapoints use `check_once: true` during startup.
+
+Default is `20`. Valid range is `1` to `100`.
+
+`queue_size` does not make the boiler answer faster and does not change `update_interval`. If the queue is too small, extra datapoints may fail to queue and can be skipped for that cycle.
+
+### `check_once`
+
+`check_once` is available on `sensor`, `binary_sensor` and `text_sensor`.
+
+```yaml
+sensor:
+  - platform: vitoconnect
+    name: "Betriebsstunden Verdichter"
+    address: 0x0580
+    length: 4
+    check_once: true
+```
+
+When `check_once: true`, the datapoint is read during startup only. Regular update cycles skip it after the initial read.
+
+Use it for values that rarely change, such as static configuration values or counters you only need once after boot. Leave it unset, or set it to `false`, for values that should update every `update_interval`.
 
 Tested with OptoLink ESP32 adapter from here:
 <https://github.com/openv/openv/wiki/Bauanleitung-ESP32-Adafruit-Feather-Huzzah32-and-Proto-Wing>
+
+## ESP32-C3 Super Mini build
+
+Hardware notes, wiring images, Home Assistant screenshots and 3D print files for an ESP32-C3 Super Mini Optolink build are collected in [docs/README.md](docs/README.md).
 
 ## Credits
 

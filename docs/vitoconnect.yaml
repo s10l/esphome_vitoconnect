@@ -1,0 +1,70 @@
+# Minimal ESP32-C3 Super Mini example for esphome_vitoconnect.
+# Use the address catalog in docs/addresses/ to add your own datapoints.
+
+substitutions:
+  name: optolink
+
+esphome:
+  name: ${name}
+  friendly_name: Optolink
+
+esp32:
+  variant: esp32c3
+  framework:
+    type: esp-idf
+
+external_components:
+  - source: github://MichaelSp/esphome_vitoconnect
+
+logger:
+
+api:
+
+ota:
+  - platform: esphome
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "Optolink Fallback Hotspot"
+    password: !secret wifi_fallback_password
+
+captive_portal:
+
+uart:
+  - id: uart_vitoconnect
+    rx_pin: GPIO20
+    tx_pin: GPIO21
+    baud_rate: 4800
+    data_bits: 8
+    parity: EVEN
+    stop_bits: 2
+
+vitoconnect:
+  uart_id: uart_vitoconnect
+  protocol: KW
+  update_interval: 60s
+
+sensor:
+  - platform: vitoconnect
+    name: "Aussentemperatur"
+    address: 0x0101
+    length: 2
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    device_class: temperature
+    filters:
+      - multiply: 0.1
+
+  - platform: vitoconnect
+    name: "Primaerkreis Vorlauftemperatur"
+    address: 0x0103
+    length: 2
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+    device_class: temperature
+    filters:
+      - multiply: 0.1
+
+# Add more datapoints from docs/addresses/vitocal-300g-vbc700-bw-ww.csv.

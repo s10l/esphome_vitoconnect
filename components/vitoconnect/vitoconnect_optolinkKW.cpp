@@ -154,14 +154,20 @@ void OptolinkKW::_receive() {
   if (_rcvBufferLen == _rcvLen) {  // message complete, TODO: check message (eg 0x00 for READ messages)   
     OptolinkDP* dp = _queue.front();
     ESP_LOGD(TAG, "Adding data to datapoint with address %x and received length %d", dp->address, _rcvBufferLen);
-    _tryOnData(_rcvBuffer, _rcvBufferLen);
-    _state = IDLE;
     _lastMillis = millis();
+    _tryOnData(_rcvBuffer, _rcvBufferLen);
+    if (_queue.size() > 0) {
+      _state = SEND;
+      _send();
+    } else {
+      _state = IDLE;
+    }
     return;
   } else if (millis() - _lastMillis > 1 * 1000UL) {  // Vitotronic isn't answering, try again
     ESP_LOGD(TAG, "Received length %d doesn't match expected length %d", _rcvBufferLen, _rcvLen);
     _rcvBufferLen = 0;
     memset(_rcvBuffer, 0, 4);
+    _tryOnError(TIMEOUT);
     _state = INIT;
   }
 }
