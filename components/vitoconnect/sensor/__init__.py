@@ -5,6 +5,8 @@ from esphome.const import CONF_ADDRESS, CONF_LENGTH
 
 from .. import CONF_VITOCONNECT_ID, VitoConnect, vitoconnect_ns
 
+MAX_DP_LENGTH = 9
+
 DEPENDENCIES = ["vitoconnect"]
 OPTOLINKSensor = vitoconnect_ns.class_("OPTOLINKSensor", sensor.Sensor)
 
@@ -13,7 +15,7 @@ CONFIG_SCHEMA = sensor.sensor_schema(OPTOLINKSensor).extend(
         cv.GenerateID(): cv.declare_id(OPTOLINKSensor),
         cv.GenerateID(CONF_VITOCONNECT_ID): cv.use_id(VitoConnect),
         cv.Required(CONF_ADDRESS): cv.uint16_t,
-        cv.Required(CONF_LENGTH): cv.uint8_t,
+        cv.Required(CONF_LENGTH): cv.one_of(*range(1, MAX_DP_LENGTH + 1), int=True),
     }
 )
 

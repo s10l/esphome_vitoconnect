@@ -14,7 +14,11 @@ OPTOLINKSensor::~OPTOLINKSensor() {
 }
 
 void OPTOLINKSensor::decode(uint8_t* data, uint8_t length, Datapoint* dp) {
-  assert(length >= _length);
+  if (length < _length) {
+    ESP_LOGW(TAG, "decode length mismatch for %s: got=%u expected=%u",
+             this->get_name().c_str(), (unsigned) length, (unsigned) _length);
+    return;
+  }
 
   if (!dp) dp = this;
 
@@ -30,7 +34,10 @@ void OPTOLINKSensor::decode(uint8_t* data, uint8_t length, Datapoint* dp) {
   }  
   else if (_length == 4){   // Commonly counter with different factors
     uint32_t tmp = 0;
-    tmp = data[3] << 24 | data[2] << 16 | data[1] << 8 | data[0];
+    tmp = (static_cast<uint32_t>(data[3]) << 24) |
+          (static_cast<uint32_t>(data[2]) << 16) |
+          (static_cast<uint32_t>(data[1]) << 8) |
+          (static_cast<uint32_t>(data[0]) << 0);
     float value = tmp / 1.0f;
     publish_state(value);
   }
@@ -42,7 +49,11 @@ void OPTOLINKSensor::encode(uint8_t* raw, uint8_t length, void* data) {
 }
 
 void OPTOLINKSensor::encode(uint8_t* raw, uint8_t length, float data) {
-  assert(length >= _length);
+  if (length < _length) {
+    ESP_LOGW(TAG, "encode length mismatch for %s: got=%u expected=%u",
+             this->get_name().c_str(), (unsigned) length, (unsigned) _length);
+    return;
+  }
 
   // Commonly temperature with factor /10 or /100
   if (_length == 2){

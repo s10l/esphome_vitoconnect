@@ -62,16 +62,24 @@ class SimpleQueue {
       _buffer = new T[_size];
     }
 
-  SimpleQueue(const SimpleQueue& obj) {
-    _buffer = new T[obj._size];
-    _firstPosition = obj._firstPosition;
-    _nextPosition = obj._nextPosition;
-    _count = obj._count;
-    _size = obj._size;
-    for (size_t i = 0; i < _count; ++i) {
-      _buffer[i] = obj._buffer[i];
+  SimpleQueue(const SimpleQueue& obj) :
+    _buffer(nullptr),
+    _firstPosition(0),
+    _nextPosition(0),
+    _count(obj._count),
+    _size(obj._size) {
+      _buffer = new T[_size];
+      for (size_t i = 0; i < _count; ++i) {
+        const size_t src = (obj._firstPosition + i) % obj._size;
+        _buffer[i] = obj._buffer[src];
+      }
+      _firstPosition = 0;
+      _nextPosition = _count;
+      if (_nextPosition == _size) _nextPosition = 0;
     }
-  }
+  SimpleQueue& operator=(const SimpleQueue&) = delete;
+  SimpleQueue(SimpleQueue&&) = delete;
+  SimpleQueue& operator=(SimpleQueue&&) = delete;
 
   /**
    * @brief Destroy the SimpleQueue object.
@@ -114,6 +122,7 @@ class SimpleQueue {
    */
   void pop() {
     if (_count > 0) {
+      _buffer[_firstPosition] = T{};
       ++_firstPosition;
       if (_firstPosition == _size) {
         // rollover to front of array

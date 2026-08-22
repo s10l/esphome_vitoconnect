@@ -14,7 +14,11 @@ OPTOLINKBinarySensor::~OPTOLINKBinarySensor() {
 }
 
 void OPTOLINKBinarySensor::decode(uint8_t* data, uint8_t length, Datapoint* dp) {
-  assert(length >= _length);
+  if (length < _length) {
+    ESP_LOGW(TAG, "decode length mismatch for %s: got=%u expected=%u",
+             this->get_name().c_str(), (unsigned) length, (unsigned) _length);
+    return;
+  }
 
   if (!dp) dp = this;
 
@@ -29,7 +33,11 @@ void OPTOLINKBinarySensor::encode(uint8_t* raw, uint8_t length, void* data) {
 }
 
 void OPTOLINKBinarySensor::encode(uint8_t* raw, uint8_t length, float data) {
-  assert(length >= _length);
+  if (length < _length) {
+    ESP_LOGW(TAG, "encode length mismatch for %s: got=%u expected=%u",
+             this->get_name().c_str(), (unsigned) length, (unsigned) _length);
+    return;
+  }
 
 }
 

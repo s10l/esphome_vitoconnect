@@ -38,8 +38,16 @@ OptolinkDP::OptolinkDP(uint16_t address, uint8_t length, bool write, uint8_t* va
   data(nullptr),
   arg(arg) {
     if (write) {
-      data = new uint8_t[length];
-      memcpy(data, value, length);
+      if (length == 0) {
+        data = nullptr;
+      } else if (value == nullptr) {
+        this->write = false;
+        this->length = 0;
+        data = nullptr;
+      } else {
+        data = new uint8_t[length];
+        memcpy(data, value, length);
+      }
     }
   }
 

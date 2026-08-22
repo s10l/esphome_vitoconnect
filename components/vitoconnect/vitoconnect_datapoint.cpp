@@ -30,7 +30,7 @@ namespace vitoconnect {
 
 std::function<void(uint8_t[], uint8_t, Datapoint* dp)> Datapoint::_stdOnData = nullptr;
 
-Datapoint::Datapoint(){
+Datapoint::Datapoint() : _address(0), _length(0) {
   // empty
 }
 
@@ -43,28 +43,22 @@ void Datapoint::onData(std::function<void(uint8_t[], uint8_t, Datapoint* dp)> ca
 }
 
 void Datapoint::encode(uint8_t* raw, uint8_t length) {
-  memset(raw, 0, _length);
+  if (raw == nullptr || length == 0) return;
+  memset(raw, 0, length);
 }
 
 void Datapoint::encode(uint8_t* raw, uint8_t length, void* data) {
-  if (length != _length) {
-    // display error about length
-    memset(raw, 0, _length);
-  } else {
-    memcpy(raw, data, length);
-  }
+  if (raw == nullptr || length == 0) return;
+  memset(raw, 0, length);
+  if (data == nullptr) return;
+  const uint8_t n = (length < _length) ? length : _length;
+  if (n > 0) memcpy(raw, data, n);
 }
 
 void Datapoint::decode(uint8_t* data, uint8_t length, Datapoint* dp) {
-  uint8_t* output = new uint8_t[_length];
-  memset(output, 0, _length);
-  if (length != _length) {
-    // display error about length
-  } else {
-    memcpy(output, data, length);
-    if (_stdOnData) _stdOnData(output, _length, dp);
-  }
-  delete[] output;
+  if (data == nullptr) return;
+  if (length != _length) return;
+  if (_stdOnData) _stdOnData(data, length, dp);
 }
 
 }  // namespace vitoconnect
