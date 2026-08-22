@@ -19,16 +19,29 @@ OPTOLINKSelect = vitoconnect_ns.class_("OPTOLINKSelect", select.Select)
 #   - value: 2
 #     label: "Heating and DHW"
 OPTIONS_SCHEMA = cv.Schema({
-    cv.Required("value"): cv.int_,
+    cv.Required("value"): cv.uint8_t,
     cv.Required("label"): cv.string,
 })
+
+
+def validate_options(options):
+    if not options:
+        raise cv.Invalid("vitoconnect select requires at least one option")
+    values = [o["value"] for o in options]
+    labels = [o["label"] for o in options]
+    if len(values) != len(set(values)):
+        raise cv.Invalid("vitoconnect select option values must be unique")
+    if len(labels) != len(set(labels)):
+        raise cv.Invalid("vitoconnect select option labels must be unique")
+    return options
+
 
 CONFIG_SCHEMA = select.select_schema(OPTOLINKSelect).extend({
     cv.GenerateID(): cv.declare_id(OPTOLINKSelect),
     cv.GenerateID(CONF_VITOCONNECT_ID): cv.use_id(VitoConnect),
     cv.Required(CONF_ADDRESS): cv.uint16_t,
-    cv.Required(CONF_LENGTH): cv.uint8_t,
-    cv.Required(CONF_OPTIONS): cv.ensure_list(OPTIONS_SCHEMA),
+    cv.Optional(CONF_LENGTH, default=1): cv.one_of(1, int=True),
+    cv.Required(CONF_OPTIONS): cv.All(cv.ensure_list(OPTIONS_SCHEMA), validate_options),
 })
 
 
