@@ -191,10 +191,20 @@ class Optolink {
  protected:
   void _tryOnData(uint8_t* data, uint8_t len);
   void _tryOnError(uint8_t error);
+  bool _isHandshakeBackoffActive(uint32_t now) const;
+  bool _isPollingPaused() const;
+  void _markHandshakeFailure(const char *tag, uint32_t now);
+  void _markHandshakeSuccess();
+  void _clearQueueWithError(uint8_t error);
   uart::UARTDevice* _uart;
   SimpleQueue<OptolinkDP> _queue;  // TODO(bertmelis): add semaphore to ESP32 version to guard access to queue
   OnDataArgCallback _onData;
   OnErrorArgCallback _onError;
+  void (*_onDataNoArg)(uint8_t* data, uint8_t len);
+  void (*_onErrorNoArg)(uint8_t error);
+  uint8_t _handshake_failures;
+  uint32_t _handshake_retry_at;
+  bool _polling_paused;
 };
 
 }  // namespace vitoconnect

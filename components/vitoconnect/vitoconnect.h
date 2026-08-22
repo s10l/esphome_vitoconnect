@@ -39,13 +39,17 @@ namespace vitoconnect {
 
 /**
  * @brief VitoConnect manages the esphome components, their datapoints and optolink to your Viessmann device.
- * 
+ *
  */
 class VitoConnect : public uart::UARTDevice, public PollingComponent {
   public:
 
-    VitoConnect() : PollingComponent(0) {}
-    
+    VitoConnect() : PollingComponent(0), _optolink(nullptr) {}
+    ~VitoConnect() {
+      delete _optolink;
+      _optolink = nullptr;
+    }
+
     void setup() override;
     void loop() override;
     void update() override;
@@ -56,11 +60,15 @@ class VitoConnect : public uart::UARTDevice, public PollingComponent {
     void onData(std::function<void(const uint8_t* data, uint8_t length, Datapoint* dp)> callback);
     void onError(std::function<void(uint8_t, Datapoint*)> callback);
 
+    // Optional hardening for write-enabled forks.
+    void set_verify_writes(bool verify) { this->verify_writes_ = verify; }
+    void set_max_write_failures(uint8_t max_failures) { this->max_write_failures_ = max_failures; }
+
     /**
      * @brief Enqueue a datapoint for writing.
-     * 
+     *
      * The onData callback will be launched on success.
-     * 
+     *
      * @tparam D Type of datapoint (inherited from class `Datapoint`)
      * @tparam T Type of the value to be written
      * @param datapoint Datapoint to be read, passed by reference.
@@ -82,14 +90,26 @@ class VitoConnect : public uart::UARTDevice, public PollingComponent {
         v(vw),
         dp(d),
         w(write),
-        la(last_update) {}
+        la(last_update),
+        exp_len(0),
+        has_exp(false) {
+          memset(exp, 0, sizeof(exp));
+        }
       VitoConnect* v;
       Datapoint* dp;
       bool w;
       uint32_t la;
+
+      // Expected raw payload for write verification (optional).
+      uint8_t exp[MAX_DP_LENGTH];
+      uint8_t exp_len;
+      bool has_exp;
     };
     static void _onData(uint8_t* data, uint8_t len, void* arg);
     static void _onError(uint8_t error, void* arg);
+
+    bool verify_writes_{false};
+    uint8_t max_write_failures_{3};
 
     std::function<void(uint8_t, Datapoint*)> _onErrorCb;
 };

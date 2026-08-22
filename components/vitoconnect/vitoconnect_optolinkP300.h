@@ -97,6 +97,10 @@ class OptolinkP300 : public Optolink {
   uint8_t _rcvBuffer[MAX_DP_LENGTH + 8];
   size_t _rcvBufferLen;
   size_t _rcvLen;
+  bool _initAckSawRx;
+  uint8_t _initAckLastRx;
+  uint32_t _initAckStartMs;
+  uint32_t _initAckLastEnableTxMs;
 };
 
 }  // namespace vitoconnect

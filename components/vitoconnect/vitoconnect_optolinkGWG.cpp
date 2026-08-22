@@ -185,8 +185,9 @@ bool OptolinkGWG::_drop_invalid_queue_entries_() {
       ESP_LOGW(TAG,
                "GWG: discarding datapoint with unsupported function MSB=0x%02X addr=0x%02X full=0x%04X",
                func, addr, (unsigned) dp->address);
-      _queue.pop();
-      // delete dp;  // only if this class owns dp allocation
+      // Route dropped queue entries through the normal error callback so
+      // write-in-flight state is released by upper layers.
+      _tryOnError(VITO_ERROR);
       continue;
     }
 
@@ -196,8 +197,9 @@ bool OptolinkGWG::_drop_invalid_queue_entries_() {
         ESP_LOGW(TAG,
                  "GWG: discarding datapoint due to direction mismatch: MSB=0x%02X addr=0x%02X full=0x%04X write=%d",
                  func, addr, (unsigned) dp->address, (int) dp->write);
-        _queue.pop();
-        // delete dp;  // only if this class owns dp allocation
+        // Route dropped queue entries through the normal error callback so
+        // write-in-flight state is released by upper layers.
+        _tryOnError(VITO_ERROR);
         continue;
       }
     }
@@ -366,8 +368,8 @@ void OptolinkGWG::_send() {
     ESP_LOGW(TAG,
              "GWG: discarding datapoint due to unknown type mapping: MSB=0x%02X addr=0x%02X full=0x%04X write=%d",
              func, addr, (unsigned) dp->address, (int) dp->write);
-    _queue.pop();
-    // delete dp;  // only if this class owns dp allocation
+    // Keep queue and state handling consistent with other error paths.
+    _tryOnError(VITO_ERROR);
     // Try next immediately.
     _state = SEND;
     return;

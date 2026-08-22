@@ -4,22 +4,31 @@ from esphome.components import number
 from esphome.const import CONF_ID, CONF_NAME, CONF_ADDRESS, CONF_LENGTH, CONF_DIV_RATIO, CONF_MAX_VALUE, CONF_MIN_VALUE, CONF_STEP #, CONF_TYPE 
 from .. import vitoconnect_ns, VitoConnect, CONF_VITOCONNECT_ID
 
+CONF_SIGNED = "signed"
+
 DEPENDENCIES = ["vitoconnect"]
 CODEOWNERS = ["@s10l"]
 
 OPTOLINKNumber = vitoconnect_ns.class_("OPTOLINKNumber", number.Number)
 
+
+def validate_div_ratio(value):
+    value = cv.float_(value)
+    if value <= 0.0:
+        raise cv.Invalid("div_ratio must be greater than 0")
+    return value
+
+
 CONFIG_SCHEMA = number.number_schema(OPTOLINKNumber).extend({
     cv.GenerateID(): cv.declare_id(OPTOLINKNumber),
     cv.GenerateID(CONF_VITOCONNECT_ID): cv.use_id(VitoConnect),
     cv.Required(CONF_ADDRESS): cv.uint16_t,
-    cv.Required(CONF_LENGTH): cv.uint8_t,
+    cv.Required(CONF_LENGTH): cv.one_of(1, 2, 4, int=True),
     cv.Required(CONF_MAX_VALUE): cv.float_,
     cv.Required(CONF_MIN_VALUE): cv.float_range(),
     cv.Required(CONF_STEP): cv.float_,
-    cv.Optional(CONF_DIV_RATIO, default=1): cv.one_of(
-            1, 2, 10, 3600, int=True
-        ),
+    cv.Optional(CONF_DIV_RATIO, default=1.0): validate_div_ratio,
+    cv.Optional(CONF_SIGNED): cv.boolean,
 })
 
 async def to_code(config):
@@ -35,6 +44,10 @@ async def to_code(config):
     cg.add(var.setAddress(config[CONF_ADDRESS]))
     cg.add(var.setLength(config[CONF_LENGTH]))
     cg.add(var.setDivRatio(config[CONF_DIV_RATIO]))
+    signed_ = config.get(CONF_SIGNED)
+    if signed_ is None:
+        signed_ = config[CONF_MIN_VALUE] < 0
+    cg.add(var.setSigned(signed_))
 
     # Add sensor to component hub (VitoConnect)
     hub = await cg.get_variable(config[CONF_VITOCONNECT_ID])

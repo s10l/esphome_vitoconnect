@@ -20,7 +20,11 @@ void OPTOLINKSwitch::write_state(bool value) {
 }
 
 void OPTOLINKSwitch::decode(uint8_t* data, uint8_t length, Datapoint* dp) {
-  assert(length == 1);
+  if (length != 1) {
+    ESP_LOGW(TAG, "decode length mismatch for %s: got=%u expected=1",
+             this->get_name().c_str(), (unsigned) length);
+    return;
+  }
   publish_state(data[0] != 0);
 }
 
@@ -35,7 +39,11 @@ void OPTOLINKSwitch::encode(uint8_t* raw, uint8_t length, void* data) {
 }
 
 void OPTOLINKSwitch::encode(uint8_t* raw, uint8_t length, bool data) {
-  assert(length == 1);
+  if (length != 1) {
+    ESP_LOGW(TAG, "encode length mismatch for %s: got=%u expected=1",
+             this->get_name().c_str(), (unsigned) length);
+    return;
+  }
   raw[0] = data ? 1 : 0;
 }
 
