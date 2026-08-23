@@ -46,7 +46,11 @@ async def to_code(config):
     cg.add(var.setDivRatio(config[CONF_DIV_RATIO]))
     signed_ = config.get(CONF_SIGNED)
     if signed_ is None:
-        signed_ = config[CONF_MIN_VALUE] < 0
+        # Multi-byte datapoints are usually two's-complement signed integers,
+        # so default to signed for length >= 2. A signed value can still be
+        # represented even when min_value >= 0, which the previous
+        # `min_value < 0` heuristic missed. Overridable via `signed:`.
+        signed_ = config[CONF_LENGTH] >= 2
     cg.add(var.setSigned(signed_))
 
     # Add sensor to component hub (VitoConnect)
