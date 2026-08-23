@@ -26,16 +26,6 @@ class OPTOLINKSelect : public select::Select, public Datapoint {
   void set_option_labels(const std::vector<std::string> &labels);
   void set_option_values(const std::vector<uint8_t> &values);
 
-  uint32_t getLastReadMs() const { return this->_last_read_ms; }
-  bool hasPendingCommand() const {
-    return this->_has_command_value || this->_last_update != 0 ||
-           this->_write_in_flight || this->_verify_pending;
-  }
-  bool hasActiveWriteCommand() const {
-    return this->_write_in_flight || this->_verify_pending;
-  }
-  uint8_t getPendingCommandValue() const { return this->_command_value; }
-
  private:
   int find_label_index_(const std::string &label) const;
   int find_value_index_(uint8_t value) const;
