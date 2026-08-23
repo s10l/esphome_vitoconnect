@@ -89,6 +89,11 @@ void OPTOLINKNumber::decode(uint8_t* data, uint8_t length, Datapoint* dp) {
       iv = (int64_t) u;
     }
   } else {
+    // The result is a signed int64, so a genuine unsigned 64-bit raw value
+    // strictly greater than INT64_MAX cannot be represented: it is clamped to
+    // INT64_MAX (symmetric with the encode path below). A true uint64
+    // datapoint that can exceed 9.2e18 is out of range; use a smaller length or
+    // a signed interpretation.
     const uint64_t max_i64 = static_cast<uint64_t>(std::numeric_limits<int64_t>::max());
     if (_length == 8 && u > max_i64) {
       ESP_LOGW(TAG, "decode %s: unsigned 64-bit raw=%llu above INT64_MAX; clamping",
