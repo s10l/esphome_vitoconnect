@@ -365,9 +365,18 @@ void OptolinkGWG::_send() {
   }
 
   if (!type_ok || type == 0x00) {
-    ESP_LOGW(TAG,
-             "GWG: discarding datapoint due to unknown type mapping: MSB=0x%02X addr=0x%02X full=0x%04X write=%d",
-             func, addr, (unsigned) dp->address, (int) dp->write);
+    static uint8_t unknown_type_warnings = 0;
+    static uint16_t last_bad_addr = 0xFFFF;
+    if (dp->address != last_bad_addr) {
+      last_bad_addr = dp->address;
+      unknown_type_warnings = 0;
+    }
+    if (unknown_type_warnings < 3) {
+      ESP_LOGW(TAG,
+               "GWG: discarding datapoint due to unknown type mapping: MSB=0x%02X addr=0x%02X full=0x%04X write=%d",
+               func, addr, (unsigned) dp->address, (int) dp->write);
+      unknown_type_warnings++;
+    }
     // Keep queue and state handling consistent with other error paths.
     _tryOnError(VITO_ERROR);
     // Try next immediately.
