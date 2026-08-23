@@ -76,6 +76,36 @@ binary_sensor:
     address: 0x0400
 ```
 
+### Writable values (`number`, `select`, `switch`)
+
+`number` entities map to a controller datapoint of `length` bytes (1, 2, 4 or 8)
+that is interpreted as a two's-complement integer when `signed` is true. The
+`signed` key is optional and is inferred from `min_value`:
+
+- Default: `signed` follows `min_value < 0`. A datapoint with `min_value >= 0`
+   is therefore decoded as **unsigned**, even when the underlying controller
+   value is a signed integer. If a multi-byte value wraps to a large number on
+   negative raws, set `signed: true` explicitly.
+- Override: `signed: true` / `signed: false` forces the interpretation.
+
+Example:
+
+```yaml
+number:
+  - platform: vitoconnect
+    name: "Vorlauftemperatur Sollwert"
+    vitoconnect: vitoconnect
+    address: 0x0AAA
+    length: 2
+    min_value: -5.0
+    max_value: 95.0
+    step: 0.5
+    # signed defaults to true here because min_value < 0
+```
+
+`div_ratio` scales the raw integer to the displayed value (default `1.0` and
+must be `> 0`).
+
 Tested with OptoLink ESP32 adapter from here:
 <https://github.com/openv/openv/wiki/Bauanleitung-ESP32-Adafruit-Feather-Huzzah32-and-Proto-Wing>
 
