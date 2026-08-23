@@ -130,6 +130,10 @@ void OptolinkKW::_sync() {
 void OptolinkKW::_send() {
   uint8_t buff[MAX_DP_LENGTH + 4];
   OptolinkDP* dp = _queue.front();
+  if (dp == nullptr) {
+    _state = IDLE;
+    return;
+  }
   uint8_t length = dp->length;
   uint16_t address = dp->address;
   if (dp->write) {
