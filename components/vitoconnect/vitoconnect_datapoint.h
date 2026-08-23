@@ -86,6 +86,20 @@ class Datapoint {
     if (this->_write_fail_count < 255) this->_write_fail_count++;
   }
 
+  // --- Poll-vs-write gating -----------------------------------------------
+  // Used by VitoConnect::update() to decide whether a datapoint is mid-write and
+  // therefore must not be concurrently poll-read. `verify_pending` must NOT block:
+  // such a datapoint is about to read back a value it just wrote, so blocking here
+  // would starve the verification read and dead-lock the flag. The defaults are
+  // safe for read-only entities, whose write-related state always stays false.
+  virtual bool hasActiveWriteCommand() const {
+    return this->_write_in_flight;
+    }
+  virtual bool hasPendingCommand() const {
+    return this->_last_update != 0 ||
+           this->_write_in_flight;
+    }
+
   // --- Optional write verification -----------------------------------------
   // When enabled, the hub can store the raw bytes it attempted to write and
   // compare them with the next read-back of the datapoint.
