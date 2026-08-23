@@ -1,0 +1,34 @@
+name: host-tests
+
+on:
+  push:
+    branches:
+      - 'hardening/**'
+      - 'stage-hardening'
+
+jobs:
+  build-and-run:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install build toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y g++ cmake
+
+      - name: Compile tests
+        run: |
+          g++ -std=c++17 -Wall -Wextra \
+            test/test_number_algorithm.cpp \
+            -o test/test_number_algorithm
+
+      - name: Run tests
+        run: |
+          ./test/test_number_algorithm
+
+      - name: Show exit status
+        run: |
+          echo "Previous step exit code: $?"
