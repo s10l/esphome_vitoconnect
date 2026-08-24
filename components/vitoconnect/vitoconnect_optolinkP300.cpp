@@ -41,7 +41,7 @@ static inline void drain_uart_(uart::UARTDevice *uart) {
   }
 }
 
-inline uint8_t calcChecksum(const uint8_t* array, size_t length) {
+static inline uint8_t calcChecksum(const uint8_t* array, size_t length) {
   uint8_t sum = 0;
   for (size_t i = 1; i < length - 1; ++i) {  // start with second byte and end before checksum
     sum += array[i];
@@ -49,7 +49,7 @@ inline uint8_t calcChecksum(const uint8_t* array, size_t length) {
   return sum;
 }
 
-inline bool checkChecksum(const uint8_t* array, size_t length) {
+static inline bool checkChecksum(const uint8_t* array, size_t length) {
   return (array[length - 1] == calcChecksum(array, length));
 }
 
