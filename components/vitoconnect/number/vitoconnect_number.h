@@ -22,15 +22,6 @@ class OPTOLINKNumber : public number::Number, public Datapoint {
 
     void setDivRatio(float div) { this->_div_ratio = div; }
     void setSigned(bool is_signed) { this->_signed = is_signed; }
-    uint32_t getLastReadMs() const { return this->_last_read_ms; }
-    bool hasPendingCommand() const {
-      return this->_has_command_value || this->_last_update != 0 ||
-             this->_write_in_flight || this->_verify_pending;
-    }
-    bool hasActiveWriteCommand() const {
-      return this->_write_in_flight || this->_verify_pending;
-    }
-    float getPendingCommandValue() const { return this->_command_value; }
 
   private:
     float _div_ratio = 1.0f;
