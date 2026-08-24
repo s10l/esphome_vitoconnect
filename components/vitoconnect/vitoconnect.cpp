@@ -107,8 +107,8 @@ void VitoConnect::update() {
   // prioritize writes over reads
   for (Datapoint* dp : this->_datapoints) {
     if (dp->getLastUpdate() == 0) continue;
-    if (dp->isWriteInFlight()) {
-      ESP_LOGD(TAG, "Skip write enqueue: addr=0x%04X write already in-flight", dp->getAddress());
+    if (dp->hasActiveWriteCommand()) {
+      ESP_LOGD(TAG, "Skip write enqueue: addr=0x%04X active write command", dp->getAddress());
       continue;
     }
 
@@ -174,11 +174,11 @@ void VitoConnect::update() {
       // Never poll-read a datapoint while a local value is pending to be written.
       // Otherwise the stale controller value can overwrite the requested state
       // before retries happen.
-      if (dp->isWriteInFlight()) {
-          ESP_LOGD(TAG, "Skip read enqueue: addr=0x%04X write in-flight", dp->getAddress());
+      if (dp->hasActiveWriteCommand()) {
+          ESP_LOGD(TAG, "Skip read enqueue: addr=0x%04X active write command", dp->getAddress());
           continue;
       }
-      if (dp->getLastUpdate() != 0) {
+      if (dp->hasPendingCommand()) {
           ESP_LOGD(TAG, "Skip read enqueue: addr=0x%04X pending write seq=%u",
                    dp->getAddress(), dp->getLastUpdate());
           continue;
