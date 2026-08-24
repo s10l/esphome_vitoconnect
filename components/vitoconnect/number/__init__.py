@@ -23,7 +23,7 @@ CONFIG_SCHEMA = number.number_schema(OPTOLINKNumber).extend({
     cv.GenerateID(): cv.declare_id(OPTOLINKNumber),
     cv.GenerateID(CONF_VITOCONNECT_ID): cv.use_id(VitoConnect),
     cv.Required(CONF_ADDRESS): cv.uint16_t,
-    cv.Required(CONF_LENGTH): cv.one_of(1, 2, 4, int=True),
+    cv.Required(CONF_LENGTH): cv.int_range(minimum=1, maximum=8),
     cv.Required(CONF_MAX_VALUE): cv.float_,
     cv.Required(CONF_MIN_VALUE): cv.float_range(),
     cv.Required(CONF_STEP): cv.float_,
