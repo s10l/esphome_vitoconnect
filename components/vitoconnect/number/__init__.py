@@ -28,7 +28,7 @@ CONFIG_SCHEMA = number.number_schema(OPTOLINKNumber).extend({
     cv.Required(CONF_MIN_VALUE): cv.float_range(),
     cv.Required(CONF_STEP): cv.float_,
     cv.Optional(CONF_DIV_RATIO, default=1.0): validate_div_ratio,
-    cv.Optional(CONF_SIGNED): cv.boolean,
+    cv.Required(CONF_SIGNED): cv.boolean,
 })
 
 async def to_code(config):
@@ -44,10 +44,10 @@ async def to_code(config):
     cg.add(var.setAddress(config[CONF_ADDRESS]))
     cg.add(var.setLength(config[CONF_LENGTH]))
     cg.add(var.setDivRatio(config[CONF_DIV_RATIO]))
-    signed_ = config.get(CONF_SIGNED)
-    if signed_ is None:
-        signed_ = config[CONF_MIN_VALUE] < 0
-    cg.add(var.setSigned(signed_))
+    # `signed` is a required key: the datapoint must declare its integer
+    # interpretation explicitly, since min_value alone cannot disambiguate a
+    # signed value that happens to have min_value >= 0.
+    cg.add(var.setSigned(config[CONF_SIGNED]))
 
     # Add sensor to component hub (VitoConnect)
     hub = await cg.get_variable(config[CONF_VITOCONNECT_ID])
