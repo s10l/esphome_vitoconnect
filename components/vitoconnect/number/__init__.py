@@ -46,6 +46,10 @@ async def to_code(config):
     cg.add(var.setDivRatio(config[CONF_DIV_RATIO]))
     signed_ = config.get(CONF_SIGNED)
     if signed_ is None:
+        # Inferred default: a datapoint with min_value < 0 is treated as
+        # signed. Note that a signed datapoint can still have min_value >= 0,
+        # in which case negative raws decode as unsigned; set `signed: true`
+        # explicitly for such values. See README "Writable values".
         signed_ = config[CONF_MIN_VALUE] < 0
     cg.add(var.setSigned(signed_))
 
