@@ -163,8 +163,12 @@ void VitoConnect::update() {
     if (!_optolink->write(dp->getAddress(), dp_len, data, reinterpret_cast<void*>(writeCbArg))) {
       ESP_LOGW(TAG, "Failed to queue write addr=0x%04X len=%u", dp->getAddress(), static_cast<unsigned>(dp_len));
       delete writeCbArg;
-      return;
-    }
+      // Do not abort the whole poll cycle on a single failed (or paused/full-queue)
+      // write: keep processing the remaining datapoints. This dp stays dirty
+      // (setWriteInFlight is only called after a successful queue below), so it
+      // is retried on the next cycle.
+      continue;
+      }
     ESP_LOGD(TAG, "Queued write addr=0x%04X len=%u", dp->getAddress(), static_cast<unsigned>(dp_len));
     ++queued_writes;
     dp->setWriteInFlight(true);
