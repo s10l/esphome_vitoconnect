@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <cstdint>
+#include <cstring>
 #include <limits>
 
 
@@ -118,6 +119,14 @@ void OPTOLINKNumber::encode(uint8_t* raw, uint8_t length, void* data) {
 }
 
 void OPTOLINKNumber::encode(uint8_t* raw, uint8_t length, float data) {
+  // Zero the caller buffer up front so any early-return path below leaves a
+  // clean buffer even for non-update() callers that do not pre-zero raw. Only
+  // the bytes we can actually write are touched, so this is never out of bounds.
+  if (raw != nullptr && _length > 0 && _length <= 8) {
+    const uint8_t n = (length < _length) ? length : _length;
+    memset(raw, 0, n);
+   }
+
   if (_length == 0 || _length > 8) {
     ESP_LOGE(TAG, "Unsupported number length %u for %s (must be 1..8)",
              (unsigned) _length, this->get_name().c_str());
